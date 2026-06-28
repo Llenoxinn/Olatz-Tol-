@@ -1,8 +1,7 @@
 import { useRef, useEffect } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { stoppingTimes } from '../../lib/collatz.js'
-
-const SIZE = 500
+import { VIZ_W, VIZ_H } from './VizContainer.jsx'
 
 function getColor(t) {
   if (t < 0.05) return [236, 253, 245]
@@ -23,14 +22,19 @@ export default function Heatmap() {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
-    const times = stoppingTimes(maxN)
-    const maxT = Math.max(...times)
-
-    const gridSize = Math.ceil(Math.sqrt(maxN))
-    const cellW = SIZE / gridSize
+    const W = VIZ_W, H = VIZ_H
 
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, SIZE, SIZE)
+    ctx.fillRect(0, 0, W, H)
+
+    const times = stoppingTimes(maxN)
+    const maxT = Math.max(...times)
+    const gridSize = Math.ceil(Math.sqrt(maxN))
+    const cellSize = Math.floor(Math.min(W, H - 40) / gridSize)
+    const mapW = cellSize * gridSize
+    const mapH = cellSize * gridSize
+    const offsetX = (W - mapW) / 2
+    const offsetY = 10
 
     for (let i = 0; i < maxN; i++) {
       const col = i % gridSize
@@ -39,27 +43,58 @@ export default function Heatmap() {
       const [r, g, b] = getColor(t)
       ctx.fillStyle = `rgb(${r},${g},${b})`
       ctx.fillRect(
-        Math.floor(col * cellW),
-        Math.floor(row * cellW),
-        Math.ceil(cellW),
-        Math.ceil(cellW)
+        offsetX + col * cellSize,
+        offsetY + row * cellSize,
+        cellSize,
+        cellSize
       )
     }
 
+    // Border around the heatmap
+    ctx.strokeStyle = '#e5e7eb'
+    ctx.lineWidth = 1
+    ctx.strokeRect(offsetX, offsetY, mapW, mapH)
+
+    // Legend bar
+    const legendW = 200
+    const legendH = 8
+    const legendX = (W - legendW) / 2
+    const legendY = offsetY + mapH + 16
+    for (let i = 0; i < legendW; i++) {
+      const t = i / legendW
+      const [r, g, b] = getColor(t)
+      ctx.fillStyle = `rgb(${r},${g},${b})`
+      ctx.fillRect(legendX + i, legendY, 1, legendH)
+    }
+    ctx.strokeStyle = '#e5e7eb'
+    ctx.strokeRect(legendX, legendY, legendW, legendH)
+
+    // Legend labels
     ctx.fillStyle = '#6b7280'
+    ctx.font = '10px Inter, monospace'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    ctx.fillText('1', legendX, legendY + legendH + 4)
+    ctx.textAlign = 'center'
+    ctx.fillText('Stopping time', legendX + legendW / 2, legendY + legendH + 4)
+    ctx.textAlign = 'right'
+    ctx.fillText(`${maxT}`, legendX + legendW, legendY + legendH + 4)
+
+    // Title
+    ctx.fillStyle = '#374151'
     ctx.font = '11px Inter, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText(`Stopping time  1 \u2014 ${maxN.toLocaleString()}`, SIZE / 2, SIZE - 8)
+    ctx.textBaseline = 'bottom'
+    ctx.fillText(`n = 1 \u2014 ${maxN.toLocaleString()}   \u00b7   ${gridSize}\u00d7${gridSize} grid`, W / 2, H - 4)
   }, [maxN])
 
   return (
-    <div className="border border-gray-200 rounded overflow-hidden inline-block">
-      <canvas
-        ref={canvasRef}
-        width={SIZE}
-        height={SIZE}
-        className="block"
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={VIZ_W}
+      height={VIZ_H}
+      className="block"
+      style={{ width: VIZ_W, height: VIZ_H }}
+    />
   )
 }

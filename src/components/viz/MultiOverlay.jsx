@@ -1,10 +1,11 @@
 import { useRef, useEffect, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
-import { sequence, convergencePoint } from '../../lib/collatz.js'
+import { sequence, convergencePoint, stoppingTime, peak } from '../../lib/collatz.js'
 import useAnimation from '../../hooks/useAnimation.js'
 import useStepSound from '../../hooks/useStepSound.js'
+import { VIZ_W, VIZ_H } from './VizContainer.jsx'
 
-const W = 700, H = 420, pad = 50
+const PAD = 55
 
 export default function MultiOverlay() {
   const canvasRef = useRef(null)
@@ -30,19 +31,32 @@ export default function MultiOverlay() {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    const W = VIZ_W, H = VIZ_H
 
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, H)
 
     const allVals = [...seqA, ...(seqB || [])]
     const maxV = Math.max(...allVals)
-    const plotW = W - 2 * pad
-    const plotH = H - 2 * pad
+    const logMax = Math.log2(maxV || 1)
+    const plotW = W - PAD * 2
+    const plotH = H - PAD * 2
 
-    const xScale = (i, len) => pad + (i / Math.max(len - 1, 1)) * plotW
+    // Grid
+    ctx.strokeStyle = '#f3f4f6'
+    ctx.lineWidth = 1
+    for (let i = 0; i <= 5; i++) {
+      const y = PAD + (i / 5) * plotH
+      ctx.beginPath()
+      ctx.moveTo(PAD, y)
+      ctx.lineTo(W - PAD, y)
+      ctx.stroke()
+    }
+
+    const xScale = (i, len) => PAD + (i / Math.max(len - 1, 1)) * plotW
     const yScale = (v) => {
-      if (maxV <= 1) return pad + plotH / 2
-      return pad + plotH - (Math.log2(v) / Math.log2(maxV)) * plotH
+      const logV = Math.log2(Math.max(v, 1))
+      return PAD + plotH - (logMax > 0 ? (logV / logMax) * plotH : plotH / 2)
     }
 
     function drawSeq(seq, color, alpha) {
@@ -50,22 +64,34 @@ export default function MultiOverlay() {
       ctx.lineWidth = 1.5
       ctx.lineCap = 'round'
       ctx.globalAlpha = alpha
-      for (let i = 0; i < len - 1; i++) {
-        const x1 = xScale(i, len), y1 = yScale(seq[i])
-        const x2 = xScale(i + 1, len), y2 = yScale(seq[i + 1])
-        ctx.beginPath()
-        ctx.moveTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.strokeStyle = color
-        ctx.stroke()
+
+      // Area fill
+      ctx.beginPath()
+      ctx.moveTo(xScale(0, len), yScale(seq[0]))
+      for (let i = 1; i < len; i++) {
+        ctx.lineTo(xScale(i, len), yScale(seq[i]))
       }
+      ctx.lineTo(xScale(len - 1, len), PAD + plotH)
+      ctx.lineTo(xScale(0, len), PAD + plotH)
+      ctx.closePath()
+      ctx.fillStyle = color.replace(')', ',0.06)').replace('rgb', 'rgba')
+      ctx.fill()
+
+      // Line
+      ctx.beginPath()
+      ctx.moveTo(xScale(0, len), yScale(seq[0]))
+      for (let i = 1; i < len; i++) {
+        ctx.lineTo(xScale(i, len), yScale(seq[i]))
+      }
+      ctx.strokeStyle = color
+      ctx.stroke()
       ctx.globalAlpha = 1
     }
 
-    drawSeq(seqA.slice(0, displayLen), '#2563eb', compareN ? 0.6 : 1)
+    drawSeq(seqA.slice(0, displayLen), '#2563eb', compareN ? 0.5 : 1)
 
     if (seqB && compareN) {
-      drawSeq(seqB.slice(0, displayLen), '#dc2626', 0.6)
+      drawSeq(seqB.slice(0, displayLen), '#dc2626', 0.5)
 
       if (mergeVal) {
         const idxA = seqA.indexOf(mergeVal)
@@ -73,38 +99,63 @@ export default function MultiOverlay() {
         if (idxA >= 0 && idxB >= 0 && idxA < displayLen && idxB < displayLen) {
           const mx = (xScale(idxA, seqA.length) + xScale(idxB, seqB.length)) / 2
           const my = yScale(mergeVal)
+
+          // Merge marker ring
+          ctx.strokeStyle = '#059669'
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.arc(mx, my, 7, 0, Math.PI * 2)
+          ctx.stroke()
           ctx.fillStyle = '#059669'
           ctx.beginPath()
-          ctx.arc(mx, my, 5, 0, Math.PI * 2)
+          ctx.arc(mx, my, 3, 0, Math.PI * 2)
           ctx.fill()
-          ctx.fillStyle = '#ffffff'
-          ctx.beginPath()
-          ctx.arc(mx, my, 2, 0, Math.PI * 2)
-          ctx.fill()
+
+          // Label
           ctx.fillStyle = '#374151'
           ctx.font = '10px Inter, monospace'
           ctx.textAlign = 'center'
-          ctx.fillText(`merge: ${mergeVal}`, mx, my - 10)
+          ctx.textBaseline = 'bottom'
+          ctx.fillText(`merge: ${mergeVal.toLocaleString()}`, mx, my - 10)
         }
       }
 
+      // Legend
+      ctx.fillStyle = '#2563eb'
+      ctx.fillRect(12, 12, 12, 3)
       ctx.fillStyle = '#6b7280'
-      ctx.font = '10px Inter, monospace'
+      ctx.font = '10px Inter, sans-serif'
       ctx.textAlign = 'left'
-      ctx.fillText(`n\u2081 = ${n}`, pad, H - 8)
-      ctx.textAlign = 'right'
-      ctx.fillText(`n\u2082 = ${compareN}`, W - pad, H - 8)
+      ctx.textBaseline = 'middle'
+      ctx.fillText(`n\u2081 = ${n}`, 28, 14)
+
+      ctx.fillStyle = '#dc2626'
+      ctx.fillRect(12, 24, 12, 3)
+      ctx.fillStyle = '#6b7280'
+      ctx.fillText(`n\u2082 = ${compareN}`, 28, 26)
     }
-  }, [seqA, seqB, compareN, displayLen, mergeVal, n])
+
+    // Bottom bar
+    ctx.fillStyle = '#f9fafb'
+    ctx.fillRect(0, H - 24, W, 24)
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '10px Inter, monospace'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(`step ${stepIndex}  \u00b7  ${displayLen}/${Math.max(seqA.length, seqB?.length || 0)} shown`, 12, H - 12)
+    if (compareN) {
+      ctx.textAlign = 'right'
+      ctx.fillText(`${mergeVal ? 'converges at ' + mergeVal.toLocaleString() : 'no merge yet'}`, W - 12, H - 12)
+    }
+  }, [seqA, seqB, compareN, displayLen, mergeVal, n, stepIndex])
 
   return (
-    <div className="border border-gray-200 rounded overflow-hidden">
-      <canvas
-        ref={canvasRef}
-        width={W}
-        height={H}
-        className="block w-full h-auto"
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={VIZ_W}
+      height={VIZ_H}
+      className="block"
+      style={{ width: VIZ_W, height: VIZ_H }}
+    />
   )
 }
