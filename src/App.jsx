@@ -44,19 +44,19 @@ export default function App() {
         </>
       }
       main={
-        <div className="flex flex-col w-full h-full overflow-hidden">
-          <div className="flex-1 min-h-0 p-2">
+        <>
+          <div className="flex-1 min-h-0 p-2 overflow-hidden">
             <VizContainer>
               {(size) => <Viz w={size.w} h={size.h} />}
             </VizContainer>
           </div>
-          <div className="shrink-0 border-t border-gray-200 pt-2 pb-2 px-4 grid grid-cols-[auto_1fr_auto_auto] gap-x-6 gap-y-1 items-start">
+          <div className="shrink-0 border-t border-gray-200 pt-2 pb-2 px-4 grid grid-cols-[auto_1fr_auto_auto] gap-x-6 gap-y-1 items-start overflow-x-auto">
             <StatsPanel />
             <Histogram />
             <DelayTracker />
             <UnsolvedPanel />
           </div>
-        </div>
+        </>
       }
     />
   )

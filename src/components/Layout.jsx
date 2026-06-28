@@ -1,40 +1,21 @@
-import { Download } from 'lucide-react'
-import { getExportFn } from './viz/exportBus.js'
-
 export default function Layout({ sidebar, main }) {
-  const handleExport = () => {
-    const fn = getExportFn()
-    if (fn) fn()
-  }
-
   return (
     <div className="h-screen flex flex-col bg-white">
       <header className="h-11 shrink-0 border-b border-gray-200 flex items-center px-4 justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-normal text-gray-900">olatz</span>
-          <span className="text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-0.5">
+        <div className="flex items-baseline gap-[3px]">
+          <span className="text-[15px] font-light text-gray-500 tracking-tight">olatz</span>
+          <span className="text-[15px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 rounded px-[5px] py-[1px] leading-none">
             tol
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 hover:text-gray-900 transition-colors"
-          >
-            <Download size={13} />
-            Export PNG
-          </button>
-          <span className="text-xs text-gray-400 tracking-wide">Llenoxinn</span>
-        </div>
+        <span className="text-[11px] font-light text-gray-400 tracking-widest uppercase">Llenoxinn</span>
       </header>
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         <aside className="w-56 shrink-0 border-r border-gray-200 p-3 overflow-y-auto flex flex-col gap-3">
           {sidebar}
         </aside>
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-            {main}
-          </div>
+        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {main}
         </main>
       </div>
     </div>
