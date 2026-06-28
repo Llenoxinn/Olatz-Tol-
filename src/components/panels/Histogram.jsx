@@ -3,8 +3,6 @@ import useCollatzStore from '../../store/useCollatzStore.js'
 import { stoppingTimes } from '../../lib/collatz.js'
 
 const PAD = { top: 10, right: 12, bottom: 30, left: 36 }
-const W = 320
-const H = 160
 
 export default function Histogram() {
   const canvasRef = useRef(null)
@@ -25,6 +23,11 @@ export default function Histogram() {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    const parent = canvas.parentElement
+    const W = parent ? parent.clientWidth : 320
+    const H = 150
+    canvas.width = W
+    canvas.height = H
     const ctx = canvas.getContext('2d')
     const plotW = W - PAD.left - PAD.right
     const plotH = H - PAD.top - PAD.bottom
@@ -32,7 +35,6 @@ export default function Histogram() {
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, H)
 
-    // Y-axis grid + labels
     ctx.strokeStyle = '#f3f4f6'
     ctx.lineWidth = 1
     ctx.fillStyle = '#9ca3af'
@@ -49,7 +51,6 @@ export default function Histogram() {
       ctx.fillText(val, PAD.left - 4, y)
     }
 
-    // Bars
     const barW = plotW / bins.length
     for (let i = 0; i < bins.length; i++) {
       const barH = (bins[i] / maxCount) * plotH
@@ -61,7 +62,6 @@ export default function Histogram() {
       ctx.fillRect(x, y, Math.max(barW - 0.5, 0.5), barH)
     }
 
-    // X-axis labels
     ctx.fillStyle = '#9ca3af'
     ctx.font = '9px Inter, monospace'
     ctx.textAlign = 'left'
@@ -70,7 +70,6 @@ export default function Histogram() {
     ctx.textAlign = 'right'
     ctx.fillText(String(maxTime), W - PAD.right, PAD.top + plotH + 6)
 
-    // X-axis title
     ctx.fillStyle = '#6b7280'
     ctx.font = '10px Inter, sans-serif'
     ctx.textAlign = 'center'
@@ -79,13 +78,12 @@ export default function Histogram() {
   }, [bins, maxCount, maxTime])
 
   return (
-    <div>
+    <div className="w-full">
       <div className="section-title">Distribution</div>
       <canvas
         ref={canvasRef}
-        width={W}
-        height={H}
-        className="block border border-gray-200 rounded"
+        className="block w-full border border-gray-200 rounded"
+        style={{ height: 150 }}
       />
     </div>
   )

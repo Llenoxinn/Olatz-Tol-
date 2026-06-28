@@ -10,6 +10,7 @@ import StatsPanel from './components/panels/StatsPanel.jsx'
 import Histogram from './components/panels/Histogram.jsx'
 import DelayTracker from './components/panels/DelayTracker.jsx'
 import UnsolvedPanel from './components/panels/UnsolvedPanel.jsx'
+import VizContainer from './components/viz/VizContainer.jsx'
 import SequencePath from './components/viz/SequencePath.jsx'
 import Heatmap from './components/viz/Heatmap.jsx'
 import ConvergenceTree from './components/viz/ConvergenceTree.jsx'
@@ -44,10 +45,12 @@ export default function App() {
       }
       main={
         <div className="flex flex-col w-full h-full overflow-hidden">
-          <div className="flex-1 min-h-0 flex items-center justify-center p-4">
-            <Viz />
+          <div className="flex-1 min-h-0 p-2">
+            <VizContainer>
+              {(size) => <Viz w={size.w} h={size.h} />}
+            </VizContainer>
           </div>
-          <div className="shrink-0 border-t border-gray-200 pt-3 pb-3 px-4 grid grid-cols-[auto_1fr_auto_auto] gap-x-6 gap-y-2 items-start">
+          <div className="shrink-0 border-t border-gray-200 pt-2 pb-2 px-4 grid grid-cols-[auto_1fr_auto_auto] gap-x-6 gap-y-1 items-start">
             <StatsPanel />
             <Histogram />
             <DelayTracker />

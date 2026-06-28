@@ -1,8 +1,6 @@
 import { useRef, useEffect } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { stoppingTimes } from '../../lib/collatz.js'
-import { VIZ_W, VIZ_H } from './vizSize.js'
-import { setExportFn, clearExportFn } from './exportBus.js'
 
 function getColor(t) {
   if (t < 0.05) return [236, 253, 245]
@@ -15,48 +13,26 @@ function getColor(t) {
   return [6, 78, 59]
 }
 
-export default function Heatmap() {
+export default function Heatmap({ w = 700, h = 450 }) {
   const canvasRef = useRef(null)
   const maxN = useCollatzStore((s) => s.maxN)
 
   useEffect(() => {
-    setExportFn(() => {
-      const src = canvasRef.current
-      if (!src) return
-      const tmp = document.createElement('canvas')
-      tmp.width = src.width
-      tmp.height = src.height
-      const ctx = tmp.getContext('2d')
-      ctx.drawImage(src, 0, 0)
-      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
-      const d = imageData.data
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
-      }
-      ctx.putImageData(imageData, 0, 0)
-      const link = document.createElement('a')
-      link.download = 'olatz-tol-heatmap.png'
-      link.href = tmp.toDataURL('image/png')
-      link.click()
-    })
-    return () => clearExportFn()
-  }, [])
-
-  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    canvas.width = w
+    canvas.height = h
     const ctx = canvas.getContext('2d')
-    const W = VIZ_W, H = VIZ_H
 
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, W, H)
+    ctx.fillRect(0, 0, w, h)
 
     const times = stoppingTimes(maxN)
     const maxT = Math.max(...times)
     const gridSize = Math.ceil(Math.sqrt(maxN))
 
-    const gridMaxW = W - 200
-    const gridMaxH = H - 40
+    const gridMaxW = w - 200
+    const gridMaxH = h - 40
     const cellSize = Math.floor(Math.min(gridMaxW, gridMaxH) / gridSize)
     const mapW = cellSize * gridSize
     const mapH = cellSize * gridSize
@@ -76,7 +52,6 @@ export default function Heatmap() {
     ctx.lineWidth = 1
     ctx.strokeRect(gridX, gridY, mapW, mapH)
 
-    // Right panel
     const rpX = gridX + mapW + 20
     const rpY = gridY
 
@@ -91,11 +66,10 @@ export default function Heatmap() {
     ctx.fillText(`n = 1 \u2013 ${maxN.toLocaleString()}`, rpX, rpY + 20)
     ctx.fillText(`${gridSize} \u00d7 ${gridSize} grid`, rpX, rpY + 36)
 
-    // Vertical legend
     const legX = rpX
     const legY = rpY + 70
     const legW = 18
-    const legH = 200
+    const legH = Math.min(200, h - 180)
 
     for (let i = 0; i < legH; i++) {
       const t = 1 - i / legH
@@ -118,31 +92,22 @@ export default function Heatmap() {
     ctx.fillText('max steps', legX + legW + 8, legY - 14)
     ctx.fillText('min steps', legX + legW + 8, legY + legH + 14)
 
-    // Description
+    const descY = legY + legH + 36
     ctx.fillStyle = '#6b7280'
     ctx.font = '10px Inter, sans-serif'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
-    const descY = legY + legH + 36
-    ctx.fillText('Each cell represents', rpX, descY)
-    ctx.fillText('a starting number.', rpX, descY + 16)
-    ctx.fillText('Color intensity =', rpX, descY + 36)
-    ctx.fillText('steps to reach 1.', rpX, descY + 52)
-
-    ctx.fillStyle = '#9ca3af'
-    ctx.font = '9px Inter, sans-serif'
-    ctx.fillText('Powers of 2 (dark) reach', rpX, descY + 80)
-    ctx.fillText('1 fastest. Clusters form', rpX, descY + 94)
-    ctx.fillText('around them.', rpX, descY + 108)
-  }, [maxN])
+    ctx.fillText('Each cell = a starting number.', rpX, descY)
+    ctx.fillText('Color = steps to reach 1.', rpX, descY + 16)
+  }, [maxN, w, h])
 
   return (
     <canvas
       ref={canvasRef}
-      width={VIZ_W}
-      height={VIZ_H}
+      width={w}
+      height={h}
       className="block"
-      style={{ width: VIZ_W, height: VIZ_H }}
+      style={{ width: w, height: h }}
     />
   )
 }

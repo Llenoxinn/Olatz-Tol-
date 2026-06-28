@@ -3,12 +3,10 @@ import useCollatzStore from '../../store/useCollatzStore.js'
 import { sequence, convergencePoint } from '../../lib/collatz.js'
 import useAnimation from '../../hooks/useAnimation.js'
 import useStepSound from '../../hooks/useStepSound.js'
-import { VIZ_W, VIZ_H } from './vizSize.js'
-import { setExportFn, clearExportFn } from './exportBus.js'
 
 const PAD = 55
 
-export default function MultiOverlay() {
+export default function MultiOverlay({ w = 700, h = 450 }) {
   const canvasRef = useRef(null)
   const n = useCollatzStore((s) => s.n)
   const compareN = useCollatzStore((s) => s.compareN)
@@ -29,42 +27,20 @@ export default function MultiOverlay() {
     : Math.min(stepIndex + 1, seqA.length)
 
   useEffect(() => {
-    setExportFn(() => {
-      const src = canvasRef.current
-      if (!src) return
-      const tmp = document.createElement('canvas')
-      tmp.width = src.width
-      tmp.height = src.height
-      const ctx = tmp.getContext('2d')
-      ctx.drawImage(src, 0, 0)
-      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
-      const d = imageData.data
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
-      }
-      ctx.putImageData(imageData, 0, 0)
-      const link = document.createElement('a')
-      link.download = 'olatz-tol-multi.png'
-      link.href = tmp.toDataURL('image/png')
-      link.click()
-    })
-    return () => clearExportFn()
-  }, [])
-
-  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    canvas.width = w
+    canvas.height = h
     const ctx = canvas.getContext('2d')
-    const W = VIZ_W, H = VIZ_H
 
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, W, H)
+    ctx.fillRect(0, 0, w, h)
 
     const allVals = [...seqA, ...(seqB || [])]
     const maxV = Math.max(...allVals)
     const logMax = Math.log2(maxV || 1)
-    const plotW = W - PAD * 2
-    const plotH = H - PAD * 2
+    const plotW = w - PAD * 2
+    const plotH = h - PAD * 2
 
     ctx.strokeStyle = '#f3f4f6'
     ctx.lineWidth = 1
@@ -72,7 +48,7 @@ export default function MultiOverlay() {
       const y = PAD + (i / 5) * plotH
       ctx.beginPath()
       ctx.moveTo(PAD, y)
-      ctx.lineTo(W - PAD, y)
+      ctx.lineTo(w - PAD, y)
       ctx.stroke()
     }
 
@@ -135,25 +111,25 @@ export default function MultiOverlay() {
     }
 
     ctx.fillStyle = '#f9fafb'
-    ctx.fillRect(0, H - 24, W, 24)
+    ctx.fillRect(0, h - 24, w, 24)
     ctx.fillStyle = '#6b7280'
     ctx.font = '10px Inter, monospace'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`step ${stepIndex}`, 12, H - 12)
+    ctx.fillText(`step ${stepIndex}`, 12, h - 12)
     if (compareN) {
       ctx.textAlign = 'right'
-      ctx.fillText(`${mergeVal ? 'converges at ' + mergeVal.toLocaleString() : 'no merge yet'}`, W - 12, H - 12)
+      ctx.fillText(`${mergeVal ? 'converges at ' + mergeVal.toLocaleString() : 'no merge yet'}`, w - 12, h - 12)
     }
-  }, [seqA, seqB, compareN, displayLen, mergeVal, n, stepIndex])
+  }, [seqA, seqB, compareN, displayLen, mergeVal, n, stepIndex, w, h])
 
   return (
     <canvas
       ref={canvasRef}
-      width={VIZ_W}
-      height={VIZ_H}
+      width={w}
+      height={h}
       className="block"
-      style={{ width: VIZ_W, height: VIZ_H }}
+      style={{ width: w, height: h }}
     />
   )
 }

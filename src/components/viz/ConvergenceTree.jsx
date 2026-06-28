@@ -2,48 +2,24 @@ import { useRef, useEffect, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { treeData } from '../../lib/collatz.js'
 import { computeTreeLayout } from '../../lib/layout.js'
-import { VIZ_W, VIZ_H } from './vizSize.js'
-import { setExportFn, clearExportFn } from './exportBus.js'
 
-export default function ConvergenceTree() {
+export default function ConvergenceTree({ w = 700, h = 450 }) {
   const canvasRef = useRef(null)
   const maxN = useCollatzStore((s) => s.maxN)
 
   const { nodes, links } = useMemo(() => treeData(maxN), [maxN])
 
   useEffect(() => {
-    setExportFn(() => {
-      const src = canvasRef.current
-      if (!src) return
-      const tmp = document.createElement('canvas')
-      tmp.width = src.width
-      tmp.height = src.height
-      const ctx = tmp.getContext('2d')
-      ctx.drawImage(src, 0, 0)
-      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
-      const d = imageData.data
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
-      }
-      ctx.putImageData(imageData, 0, 0)
-      const link = document.createElement('a')
-      link.download = 'olatz-tol-tree.png'
-      link.href = tmp.toDataURL('image/png')
-      link.click()
-    })
-    return () => clearExportFn()
-  }, [])
-
-  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || nodes.length === 0) return
+    canvas.width = w
+    canvas.height = h
     const ctx = canvas.getContext('2d')
-    const W = VIZ_W, H = VIZ_H
 
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, W, H)
+    ctx.fillRect(0, 0, w, h)
 
-    const positions = computeTreeLayout(nodes, links, W, H - 24)
+    const positions = computeTreeLayout(nodes, links, w, h - 24)
     const maxDepth = Math.max(...nodes.map((n) => n.depth))
 
     ctx.lineWidth = 0.4
@@ -94,21 +70,21 @@ export default function ConvergenceTree() {
     }
 
     ctx.fillStyle = '#f9fafb'
-    ctx.fillRect(0, H - 24, W, 24)
+    ctx.fillRect(0, h - 24, w, 24)
     ctx.fillStyle = '#6b7280'
     ctx.font = '10px Inter, monospace'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`${nodes.length} nodes  \u00b7  ${links.length} edges  \u00b7  depth 0\u2013${maxDepth}`, 12, H - 12)
-  }, [nodes, links])
+    ctx.fillText(`${nodes.length} nodes  \u00b7  ${links.length} edges  \u00b7  depth 0\u2013${maxDepth}`, 12, h - 12)
+  }, [nodes, links, w, h])
 
   return (
     <canvas
       ref={canvasRef}
-      width={VIZ_W}
-      height={VIZ_H}
+      width={w}
+      height={h}
       className="block"
-      style={{ width: VIZ_W, height: VIZ_H }}
+      style={{ width: w, height: h }}
     />
   )
 }
