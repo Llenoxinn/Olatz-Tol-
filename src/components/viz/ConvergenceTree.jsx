@@ -2,15 +2,37 @@ import { useRef, useEffect, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { treeData } from '../../lib/collatz.js'
 import { computeTreeLayout } from '../../lib/layout.js'
-import { VIZ_W, VIZ_H } from './VizContainer.jsx'
-
-const PAD = 40
+import { VIZ_W, VIZ_H } from './vizSize.js'
+import { setExportFn, clearExportFn } from './exportBus.js'
 
 export default function ConvergenceTree() {
   const canvasRef = useRef(null)
   const maxN = useCollatzStore((s) => s.maxN)
 
   const { nodes, links } = useMemo(() => treeData(maxN), [maxN])
+
+  useEffect(() => {
+    setExportFn(() => {
+      const src = canvasRef.current
+      if (!src) return
+      const tmp = document.createElement('canvas')
+      tmp.width = src.width
+      tmp.height = src.height
+      const ctx = tmp.getContext('2d')
+      ctx.drawImage(src, 0, 0)
+      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
+      const d = imageData.data
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
+      }
+      ctx.putImageData(imageData, 0, 0)
+      const link = document.createElement('a')
+      link.download = 'olatz-tol-tree.png'
+      link.href = tmp.toDataURL('image/png')
+      link.click()
+    })
+    return () => clearExportFn()
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -24,7 +46,6 @@ export default function ConvergenceTree() {
     const positions = computeTreeLayout(nodes, links, W, H - 24)
     const maxDepth = Math.max(...nodes.map((n) => n.depth))
 
-    // Draw edges first
     ctx.lineWidth = 0.4
     ctx.lineCap = 'round'
     for (const link of links) {
@@ -40,40 +61,31 @@ export default function ConvergenceTree() {
       ctx.stroke()
     }
 
-    // Draw nodes
     for (const node of nodes) {
       const pos = positions.get(node.id)
       if (!pos) continue
       const t = node.depth / maxDepth
-
-      // Color: deep nodes are lighter green, shallow are darker
       const r = Math.round(16 + t * 100)
       const g = Math.round(185 - t * 80)
       const b = Math.round(129 - t * 60)
-
       const radius = Math.max(1, 4.5 - t * 3)
-
       ctx.fillStyle = `rgb(${r},${g},${b})`
       ctx.beginPath()
       ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2)
       ctx.fill()
     }
 
-    // Highlight root (1)
     const root = positions.get(1)
     if (root) {
-      // Outer ring
       ctx.strokeStyle = '#059669'
       ctx.lineWidth = 1.5
       ctx.beginPath()
       ctx.arc(root.x, root.y, 7, 0, Math.PI * 2)
       ctx.stroke()
-      // Inner dot
       ctx.fillStyle = '#059669'
       ctx.beginPath()
       ctx.arc(root.x, root.y, 4, 0, Math.PI * 2)
       ctx.fill()
-      // Label
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 7px Inter, sans-serif'
       ctx.textAlign = 'center'
@@ -81,7 +93,6 @@ export default function ConvergenceTree() {
       ctx.fillText('1', root.x, root.y)
     }
 
-    // Bottom bar
     ctx.fillStyle = '#f9fafb'
     ctx.fillRect(0, H - 24, W, 24)
     ctx.fillStyle = '#6b7280'
@@ -89,21 +100,6 @@ export default function ConvergenceTree() {
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
     ctx.fillText(`${nodes.length} nodes  \u00b7  ${links.length} edges  \u00b7  depth 0\u2013${maxDepth}`, 12, H - 12)
-
-    // Depth legend (right side of bottom bar)
-    ctx.textAlign = 'right'
-    ctx.fillText('shallow', W - 120, H - 12)
-    // Gradient bar
-    for (let i = 0; i < 60; i++) {
-      const t = i / 60
-      const r = Math.round(16 + t * 100)
-      const g = Math.round(185 - t * 80)
-      const b = Math.round(129 - t * 60)
-      ctx.fillStyle = `rgb(${r},${g},${b})`
-      ctx.fillRect(W - 100 + i, H - 16, 1, 8)
-    }
-    ctx.fillStyle = '#6b7280'
-    ctx.fillText('deep', W - 12, H - 12)
   }, [nodes, links])
 
   return (

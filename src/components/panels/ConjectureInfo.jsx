@@ -36,6 +36,7 @@ export default function ConjectureInfo() {
             Repeat. The conjecture: you always reach 1.
           </p>
 
+          {/* Formula */}
           <div className="bg-gray-50 rounded border border-gray-200 p-2.5">
             <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
               Formula
@@ -46,23 +47,24 @@ export default function ConjectureInfo() {
             </div>
           </div>
 
-          <div>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          {/* Example */}
+          <div className="border border-emerald-200 bg-emerald-50/50 rounded p-2.5">
+            <div className="text-[10px] font-semibold text-emerald-700 uppercase tracking-wider mb-2">
               Example: n = 27 (111 steps)
             </div>
             <div className="font-mono text-[10px] text-gray-700 leading-loose">
               {EXAMPLE.map((s, i) => (
                 <span key={i}>
-                  <span className="font-semibold">{s.n}</span>
-                  <span className={s.odd ? 'text-red-500' : 'text-blue-500'}>
+                  <span className="font-bold text-gray-900">{s.n}</span>
+                  <span className={`mx-0.5 ${s.odd ? 'text-red-500 font-medium' : 'text-blue-500 font-medium'}`}>
                     {s.odd ? ' x3+1 ' : ' /2 '}
                   </span>
                   {i < EXAMPLE.length - 1 ? '> ' : '... > '}
                 </span>
               ))}
-              <span className="font-semibold">1</span>
+              <span className="font-bold text-emerald-600">1</span>
             </div>
-            <div className="text-[10px] text-gray-400 mt-1">
+            <div className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-emerald-200">
               Peak: 9,232 (step 77 of 111)
             </div>
           </div>

@@ -1,7 +1,8 @@
 import { useRef, useEffect } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { stoppingTimes } from '../../lib/collatz.js'
-import { VIZ_W, VIZ_H } from './VizContainer.jsx'
+import { VIZ_W, VIZ_H } from './vizSize.js'
+import { setExportFn, clearExportFn } from './exportBus.js'
 
 function getColor(t) {
   if (t < 0.05) return [236, 253, 245]
@@ -19,6 +20,29 @@ export default function Heatmap() {
   const maxN = useCollatzStore((s) => s.maxN)
 
   useEffect(() => {
+    setExportFn(() => {
+      const src = canvasRef.current
+      if (!src) return
+      const tmp = document.createElement('canvas')
+      tmp.width = src.width
+      tmp.height = src.height
+      const ctx = tmp.getContext('2d')
+      ctx.drawImage(src, 0, 0)
+      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
+      const d = imageData.data
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
+      }
+      ctx.putImageData(imageData, 0, 0)
+      const link = document.createElement('a')
+      link.download = 'olatz-tol-heatmap.png'
+      link.href = tmp.toDataURL('image/png')
+      link.click()
+    })
+    return () => clearExportFn()
+  }, [])
+
+  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -31,7 +55,6 @@ export default function Heatmap() {
     const maxT = Math.max(...times)
     const gridSize = Math.ceil(Math.sqrt(maxN))
 
-    // Grid fills most of the canvas, legend on right
     const gridMaxW = W - 200
     const gridMaxH = H - 40
     const cellSize = Math.floor(Math.min(gridMaxW, gridMaxH) / gridSize)
@@ -40,22 +63,15 @@ export default function Heatmap() {
     const gridX = 12
     const gridY = 20
 
-    // Draw grid
     for (let i = 0; i < maxN; i++) {
       const col = i % gridSize
       const row = Math.floor(i / gridSize)
       const t = times[i] / maxT
       const [r, g, b] = getColor(t)
       ctx.fillStyle = `rgb(${r},${g},${b})`
-      ctx.fillRect(
-        gridX + col * cellSize,
-        gridY + row * cellSize,
-        cellSize,
-        cellSize
-      )
+      ctx.fillRect(gridX + col * cellSize, gridY + row * cellSize, cellSize, cellSize)
     }
 
-    // Grid border
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 1
     ctx.strokeRect(gridX, gridY, mapW, mapH)
@@ -64,7 +80,6 @@ export default function Heatmap() {
     const rpX = gridX + mapW + 20
     const rpY = gridY
 
-    // Title
     ctx.fillStyle = '#111827'
     ctx.font = 'bold 12px Inter, sans-serif'
     ctx.textAlign = 'left'
@@ -76,7 +91,7 @@ export default function Heatmap() {
     ctx.fillText(`n = 1 \u2013 ${maxN.toLocaleString()}`, rpX, rpY + 20)
     ctx.fillText(`${gridSize} \u00d7 ${gridSize} grid`, rpX, rpY + 36)
 
-    // Vertical legend bar
+    // Vertical legend
     const legX = rpX
     const legY = rpY + 70
     const legW = 18
@@ -92,7 +107,6 @@ export default function Heatmap() {
     ctx.lineWidth = 0.5
     ctx.strokeRect(legX, legY, legW, legH)
 
-    // Legend labels
     ctx.fillStyle = '#374151'
     ctx.font = '10px Inter, monospace'
     ctx.textAlign = 'left'
@@ -115,7 +129,6 @@ export default function Heatmap() {
     ctx.fillText('Color intensity =', rpX, descY + 36)
     ctx.fillText('steps to reach 1.', rpX, descY + 52)
 
-    // Pattern note
     ctx.fillStyle = '#9ca3af'
     ctx.font = '9px Inter, sans-serif'
     ctx.fillText('Powers of 2 (dark) reach', rpX, descY + 80)

@@ -1,4 +1,12 @@
+import { Download } from 'lucide-react'
+import { getExportFn } from './viz/exportBus.js'
+
 export default function Layout({ sidebar, main }) {
+  const handleExport = () => {
+    const fn = getExportFn()
+    if (fn) fn()
+  }
+
   return (
     <div className="h-screen flex flex-col bg-white">
       <header className="h-11 shrink-0 border-b border-gray-200 flex items-center px-4 justify-between">
@@ -8,7 +16,16 @@ export default function Layout({ sidebar, main }) {
             tol
           </span>
         </div>
-        <span className="text-xs text-gray-400 tracking-wide">Llenoxinn</span>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          >
+            <Download size={13} />
+            Export PNG
+          </button>
+          <span className="text-xs text-gray-400 tracking-wide">Llenoxinn</span>
+        </div>
       </header>
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-56 shrink-0 border-r border-gray-200 p-3 overflow-y-auto flex flex-col gap-3">

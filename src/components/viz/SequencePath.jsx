@@ -3,7 +3,8 @@ import useCollatzStore from '../../store/useCollatzStore.js'
 import { stepsWithFlags, stoppingTime, maxValue, peak } from '../../lib/collatz.js'
 import useAnimation from '../../hooks/useAnimation.js'
 import useStepSound from '../../hooks/useStepSound.js'
-import { VIZ_W, VIZ_H } from './VizContainer.jsx'
+import { VIZ_W, VIZ_H } from './vizSize.js'
+import { setExportFn, clearExportFn } from './exportBus.js'
 
 const PAD = 55
 
@@ -21,6 +22,29 @@ export default function SequencePath() {
     mv: maxValue(n),
     pk: peak(n),
   }), [n])
+
+  useEffect(() => {
+    setExportFn(() => {
+      const src = canvasRef.current
+      if (!src) return
+      const tmp = document.createElement('canvas')
+      tmp.width = src.width
+      tmp.height = src.height
+      const ctx = tmp.getContext('2d')
+      ctx.drawImage(src, 0, 0)
+      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
+      const d = imageData.data
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
+      }
+      ctx.putImageData(imageData, 0, 0)
+      const link = document.createElement('a')
+      link.download = 'olatz-tol-path.png'
+      link.href = tmp.toDataURL('image/png')
+      link.click()
+    })
+    return () => clearExportFn()
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -44,7 +68,7 @@ export default function SequencePath() {
 
     const values = disp.map((s) => s.value)
     const maxV = Math.max(...values)
-    const minV = 1
+    const logMax = Math.log2(maxV || 1)
     const plotW = W - PAD * 2
     const plotH = H - PAD * 2
 
@@ -59,8 +83,7 @@ export default function SequencePath() {
       ctx.stroke()
     }
 
-    // Y-axis labels (log scale)
-    const logMax = Math.log2(maxV || 1)
+    // Y-axis labels
     ctx.fillStyle = '#9ca3af'
     ctx.font = '10px Inter, monospace'
     ctx.textAlign = 'right'
@@ -73,9 +96,9 @@ export default function SequencePath() {
     }
 
     // X-axis labels
+    const stepCount = disp.length - 1
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
-    const stepCount = disp.length - 1
     const xTicks = Math.min(5, stepCount)
     for (let i = 0; i <= xTicks; i++) {
       const step = Math.round((i / xTicks) * stepCount)
@@ -104,7 +127,7 @@ export default function SequencePath() {
       return PAD + plotH - (logMax > 0 ? (logV / logMax) * plotH : plotH / 2)
     }
 
-    // Area fill under the line
+    // Area fill
     ctx.beginPath()
     ctx.moveTo(xScale(0), yScale(disp[0].value))
     for (let i = 1; i < disp.length; i++) {
@@ -119,7 +142,7 @@ export default function SequencePath() {
     ctx.fillStyle = grad
     ctx.fill()
 
-    // Line segments with per-segment coloring
+    // Line segments
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
@@ -134,7 +157,7 @@ export default function SequencePath() {
       ctx.stroke()
     }
 
-    // Data points (every nth to reduce clutter, plus first and last)
+    // Data points
     const step = Math.max(1, Math.floor(disp.length / 20))
     ctx.lineWidth = 1
     for (let i = 0; i < disp.length; i += step) {
@@ -144,6 +167,7 @@ export default function SequencePath() {
       ctx.arc(x, y, 2.5, 0, Math.PI * 2)
       ctx.fill()
     }
+
     // Last point
     const lx = xScale(disp.length - 1), ly = yScale(disp[disp.length - 1].value)
     ctx.fillStyle = '#059669'

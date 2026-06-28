@@ -43,15 +43,15 @@ export default function App() {
         </>
       }
       main={
-        <div className="flex flex-col gap-4 w-full h-full">
-          <div className="flex-1 flex items-center justify-center overflow-hidden">
+        <div className="flex flex-col w-full h-full overflow-hidden">
+          <div className="flex-1 min-h-0 flex items-center justify-center p-4">
             <Viz />
           </div>
-          <div className="shrink-0 border-t border-gray-200 pt-3 flex gap-6 overflow-x-auto">
-            <div className="min-w-[120px]"><StatsPanel /></div>
-            <div className="min-w-[200px]"><Histogram /></div>
-            <div className="min-w-[140px]"><DelayTracker /></div>
-            <div className="min-w-[180px]"><UnsolvedPanel /></div>
+          <div className="shrink-0 border-t border-gray-200 pt-3 pb-3 px-4 grid grid-cols-[auto_1fr_auto_auto] gap-x-6 gap-y-2 items-start">
+            <StatsPanel />
+            <Histogram />
+            <DelayTracker />
+            <UnsolvedPanel />
           </div>
         </div>
       }

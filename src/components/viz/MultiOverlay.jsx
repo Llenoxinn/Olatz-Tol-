@@ -1,9 +1,10 @@
 import { useRef, useEffect, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
-import { sequence, convergencePoint, stoppingTime, peak } from '../../lib/collatz.js'
+import { sequence, convergencePoint } from '../../lib/collatz.js'
 import useAnimation from '../../hooks/useAnimation.js'
 import useStepSound from '../../hooks/useStepSound.js'
-import { VIZ_W, VIZ_H } from './VizContainer.jsx'
+import { VIZ_W, VIZ_H } from './vizSize.js'
+import { setExportFn, clearExportFn } from './exportBus.js'
 
 const PAD = 55
 
@@ -28,6 +29,29 @@ export default function MultiOverlay() {
     : Math.min(stepIndex + 1, seqA.length)
 
   useEffect(() => {
+    setExportFn(() => {
+      const src = canvasRef.current
+      if (!src) return
+      const tmp = document.createElement('canvas')
+      tmp.width = src.width
+      tmp.height = src.height
+      const ctx = tmp.getContext('2d')
+      ctx.drawImage(src, 0, 0)
+      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
+      const d = imageData.data
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
+      }
+      ctx.putImageData(imageData, 0, 0)
+      const link = document.createElement('a')
+      link.download = 'olatz-tol-multi.png'
+      link.href = tmp.toDataURL('image/png')
+      link.click()
+    })
+    return () => clearExportFn()
+  }, [])
+
+  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -42,7 +66,6 @@ export default function MultiOverlay() {
     const plotW = W - PAD * 2
     const plotH = H - PAD * 2
 
-    // Grid
     ctx.strokeStyle = '#f3f4f6'
     ctx.lineWidth = 1
     for (let i = 0; i <= 5; i++) {
@@ -64,25 +87,9 @@ export default function MultiOverlay() {
       ctx.lineWidth = 1.5
       ctx.lineCap = 'round'
       ctx.globalAlpha = alpha
-
-      // Area fill
       ctx.beginPath()
       ctx.moveTo(xScale(0, len), yScale(seq[0]))
-      for (let i = 1; i < len; i++) {
-        ctx.lineTo(xScale(i, len), yScale(seq[i]))
-      }
-      ctx.lineTo(xScale(len - 1, len), PAD + plotH)
-      ctx.lineTo(xScale(0, len), PAD + plotH)
-      ctx.closePath()
-      ctx.fillStyle = color.replace(')', ',0.06)').replace('rgb', 'rgba')
-      ctx.fill()
-
-      // Line
-      ctx.beginPath()
-      ctx.moveTo(xScale(0, len), yScale(seq[0]))
-      for (let i = 1; i < len; i++) {
-        ctx.lineTo(xScale(i, len), yScale(seq[i]))
-      }
+      for (let i = 1; i < len; i++) ctx.lineTo(xScale(i, len), yScale(seq[i]))
       ctx.strokeStyle = color
       ctx.stroke()
       ctx.globalAlpha = 1
@@ -92,15 +99,12 @@ export default function MultiOverlay() {
 
     if (seqB && compareN) {
       drawSeq(seqB.slice(0, displayLen), '#dc2626', 0.5)
-
       if (mergeVal) {
         const idxA = seqA.indexOf(mergeVal)
         const idxB = seqB.indexOf(mergeVal)
         if (idxA >= 0 && idxB >= 0 && idxA < displayLen && idxB < displayLen) {
           const mx = (xScale(idxA, seqA.length) + xScale(idxB, seqB.length)) / 2
           const my = yScale(mergeVal)
-
-          // Merge marker ring
           ctx.strokeStyle = '#059669'
           ctx.lineWidth = 2
           ctx.beginPath()
@@ -110,8 +114,6 @@ export default function MultiOverlay() {
           ctx.beginPath()
           ctx.arc(mx, my, 3, 0, Math.PI * 2)
           ctx.fill()
-
-          // Label
           ctx.fillStyle = '#374151'
           ctx.font = '10px Inter, monospace'
           ctx.textAlign = 'center'
@@ -119,8 +121,6 @@ export default function MultiOverlay() {
           ctx.fillText(`merge: ${mergeVal.toLocaleString()}`, mx, my - 10)
         }
       }
-
-      // Legend
       ctx.fillStyle = '#2563eb'
       ctx.fillRect(12, 12, 12, 3)
       ctx.fillStyle = '#6b7280'
@@ -128,21 +128,19 @@ export default function MultiOverlay() {
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
       ctx.fillText(`n\u2081 = ${n}`, 28, 14)
-
       ctx.fillStyle = '#dc2626'
       ctx.fillRect(12, 24, 12, 3)
       ctx.fillStyle = '#6b7280'
       ctx.fillText(`n\u2082 = ${compareN}`, 28, 26)
     }
 
-    // Bottom bar
     ctx.fillStyle = '#f9fafb'
     ctx.fillRect(0, H - 24, W, 24)
     ctx.fillStyle = '#6b7280'
     ctx.font = '10px Inter, monospace'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`step ${stepIndex}  \u00b7  ${displayLen}/${Math.max(seqA.length, seqB?.length || 0)} shown`, 12, H - 12)
+    ctx.fillText(`step ${stepIndex}`, 12, H - 12)
     if (compareN) {
       ctx.textAlign = 'right'
       ctx.fillText(`${mergeVal ? 'converges at ' + mergeVal.toLocaleString() : 'no merge yet'}`, W - 12, H - 12)

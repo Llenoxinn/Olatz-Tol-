@@ -4,7 +4,8 @@ import { stepsWithFlags } from '../../lib/collatz.js'
 import { computeSpiralPath } from '../../lib/layout.js'
 import useAnimation from '../../hooks/useAnimation.js'
 import useStepSound from '../../hooks/useStepSound.js'
-import { VIZ_W, VIZ_H } from './VizContainer.jsx'
+import { VIZ_W, VIZ_H } from './vizSize.js'
+import { setExportFn, clearExportFn } from './exportBus.js'
 
 export default function Spiral() {
   const canvasRef = useRef(null)
@@ -15,6 +16,29 @@ export default function Spiral() {
   useStepSound()
 
   const steps = useMemo(() => stepsWithFlags(n), [n])
+
+  useEffect(() => {
+    setExportFn(() => {
+      const src = canvasRef.current
+      if (!src) return
+      const tmp = document.createElement('canvas')
+      tmp.width = src.width
+      tmp.height = src.height
+      const ctx = tmp.getContext('2d')
+      ctx.drawImage(src, 0, 0)
+      const imageData = ctx.getImageData(0, 0, tmp.width, tmp.height)
+      const d = imageData.data
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 250 && d[i + 1] > 250 && d[i + 2] > 250) d[i + 3] = 0
+      }
+      ctx.putImageData(imageData, 0, 0)
+      const link = document.createElement('a')
+      link.download = 'olatz-tol-spiral.png'
+      link.href = tmp.toDataURL('image/png')
+      link.click()
+    })
+    return () => clearExportFn()
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -37,7 +61,6 @@ export default function Spiral() {
       return
     }
 
-    // Center crosshair
     ctx.strokeStyle = '#f3f4f6'
     ctx.lineWidth = 0.5
     ctx.beginPath()
@@ -47,7 +70,6 @@ export default function Spiral() {
     ctx.lineTo(W - 10, (H - 24) / 2)
     ctx.stroke()
 
-    // Spiral line
     ctx.lineWidth = 1.5
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
@@ -64,31 +86,17 @@ export default function Spiral() {
     }
     ctx.globalAlpha = 1
 
-    // Start marker
     ctx.fillStyle = '#e5e7eb'
     ctx.beginPath()
     ctx.arc(points[0].x, points[0].y, 3, 0, Math.PI * 2)
     ctx.fill()
 
-    // End marker
     const last = points[points.length - 1]
     ctx.fillStyle = '#059669'
     ctx.beginPath()
     ctx.arc(last.x, last.y, 4, 0, Math.PI * 2)
     ctx.fill()
 
-    // Step labels at key points
-    const labelEvery = Math.max(1, Math.floor(points.length / 8))
-    ctx.fillStyle = '#9ca3af'
-    ctx.font = '9px Inter, monospace'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    for (let i = labelEvery; i < points.length - 1; i += labelEvery) {
-      const p = points[i]
-      ctx.fillText(i, p.x + 8, p.y - 8)
-    }
-
-    // Bottom bar
     ctx.fillStyle = '#f9fafb'
     ctx.fillRect(0, H - 24, W, 24)
     ctx.fillStyle = '#6b7280'

@@ -14,7 +14,7 @@ export default function StatsPanel() {
   return (
     <div>
       <div className="section-title">Statistics</div>
-      <dl className="text-xs space-y-1">
+      <dl className="text-xs">
         <Row label="Stopping time" value={stats.stoppingTime} />
         <Row label="Max value" value={stats.maxValue.toLocaleString()} />
         <Row label="Odd steps" value={stats.ratio.odd} />
@@ -27,9 +27,9 @@ export default function StatsPanel() {
 
 function Row({ label, value }) {
   return (
-    <div className="flex justify-between items-baseline">
+    <div className="flex justify-between items-baseline py-1 border-b border-gray-100 last:border-0">
       <dt className="text-gray-500">{label}</dt>
-      <dd className="font-mono text-gray-900">{value}</dd>
+      <dd className="font-mono font-medium text-gray-900 ml-4">{value}</dd>
     </div>
   )
 }

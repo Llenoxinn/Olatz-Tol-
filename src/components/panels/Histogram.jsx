@@ -2,9 +2,9 @@ import { useRef, useEffect, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { stoppingTimes } from '../../lib/collatz.js'
 
-const PAD = { top: 8, right: 10, bottom: 22, left: 32 }
-const W = 300
-const H = 140
+const PAD = { top: 10, right: 12, bottom: 30, left: 36 }
+const W = 320
+const H = 160
 
 export default function Histogram() {
   const canvasRef = useRef(null)
@@ -64,11 +64,18 @@ export default function Histogram() {
     // X-axis labels
     ctx.fillStyle = '#9ca3af'
     ctx.font = '9px Inter, monospace'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    ctx.fillText('0', PAD.left, PAD.top + plotH + 6)
+    ctx.textAlign = 'right'
+    ctx.fillText(String(maxTime), W - PAD.right, PAD.top + plotH + 6)
+
+    // X-axis title
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '10px Inter, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
-    ctx.fillText('0', PAD.left, H - PAD.bottom + 4)
-    ctx.fillText(String(maxTime), W - PAD.right, H - PAD.bottom + 4)
-    ctx.fillText('Stopping time', PAD.left + plotW / 2, H - 4)
+    ctx.fillText('Stopping time', PAD.left + plotW / 2, PAD.top + plotH + 18)
   }, [bins, maxCount, maxTime])
 
   return (
