@@ -31,13 +31,28 @@ export default function Heatmap() {
     const maxT = Math.max(...times)
     const gridSize = Math.ceil(Math.sqrt(maxN))
 
-    // Reserve space: 10 top, 30 bottom for legend + title
-    const mapArea = H - 50
+    // Layout: title (20) + grid + gap (12) + legend (30) + gap (8) + description (16)
+    const titleH = 22
+    const legendH = 30
+    const descH = 16
+    const gap = 10
+    const mapArea = H - titleH - legendH - descH - gap * 3
     const cellSize = Math.floor(Math.min(W, mapArea) / gridSize)
     const mapW = cellSize * gridSize
     const mapH = cellSize * gridSize
     const offsetX = (W - mapW) / 2
-    const offsetY = 8
+    const offsetY = titleH + gap
+
+    // Title
+    ctx.fillStyle = '#374151'
+    ctx.font = '11px Inter, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.fillText(
+      `Stopping time  \u00b7  n = 1\u2013${maxN.toLocaleString()}  \u00b7  ${gridSize}\u00d7${gridSize}`,
+      W / 2,
+      6
+    )
 
     // Draw grid
     for (let i = 0; i < maxN; i++) {
@@ -54,43 +69,47 @@ export default function Heatmap() {
       )
     }
 
-    // Border
+    // Grid border
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 1
     ctx.strokeRect(offsetX, offsetY, mapW, mapH)
 
-    // --- Legend area below the grid ---
-    const legendY = offsetY + mapH + 12
-    const legendW = 180
-    const legendH = 8
-    const legendX = (W - legendW) / 2
+    // Legend
+    const legendY = offsetY + mapH + gap
+    const legendBarW = 160
+    const legendBarH = 8
+    const legendBarX = (W - legendBarW) / 2
 
-    // Gradient bar
-    for (let i = 0; i < legendW; i++) {
-      const t = i / legendW
+    for (let i = 0; i < legendBarW; i++) {
+      const t = i / legendBarW
       const [r, g, b] = getColor(t)
       ctx.fillStyle = `rgb(${r},${g},${b})`
-      ctx.fillRect(legendX + i, legendY, 1, legendH)
+      ctx.fillRect(legendBarX + i, legendY, 1, legendBarH)
     }
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 0.5
-    ctx.strokeRect(legendX, legendY, legendW, legendH)
+    ctx.strokeRect(legendBarX, legendY, legendBarW, legendBarH)
 
-    // Legend labels - below the bar
-    ctx.fillStyle = '#6b7280'
-    ctx.font = '10px Inter, monospace'
+    // Legend labels
+    ctx.fillStyle = '#9ca3af'
+    ctx.font = '9px Inter, monospace'
     ctx.textBaseline = 'top'
     ctx.textAlign = 'left'
-    ctx.fillText('1', legendX, legendY + legendH + 4)
+    ctx.fillText('1', legendBarX, legendY + legendBarH + 3)
     ctx.textAlign = 'right'
-    ctx.fillText(String(maxT), legendX + legendW, legendY + legendH + 4)
+    ctx.fillText(String(maxT), legendBarX + legendBarW, legendY + legendBarH + 3)
 
-    // Title - at the very bottom
-    ctx.fillStyle = '#374151'
-    ctx.font = '11px Inter, sans-serif'
+    // Description
+    const descY = legendY + legendBarH + 20
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '10px Inter, sans-serif'
     ctx.textAlign = 'center'
-    ctx.textBaseline = 'bottom'
-    ctx.fillText(`Stopping time  \u00b7  n = 1\u2013${maxN.toLocaleString()}  \u00b7  ${gridSize}\u00d7${gridSize}`, W / 2, H - 4)
+    ctx.textBaseline = 'top'
+    ctx.fillText(
+      'Each cell = a starting number. Color = steps to reach 1.',
+      W / 2,
+      descY
+    )
   }, [maxN])
 
   return (
