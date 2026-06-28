@@ -4,6 +4,7 @@ import NumberInput from './components/controls/NumberInput.jsx'
 import StepControls from './components/controls/StepControls.jsx'
 import CompareInput from './components/controls/CompareInput.jsx'
 import RecordReplay from './components/controls/RecordReplay.jsx'
+import ConjectureInfo from './components/panels/ConjectureInfo.jsx'
 import StatsPanel from './components/panels/StatsPanel.jsx'
 import Histogram from './components/panels/Histogram.jsx'
 import DelayTracker from './components/panels/DelayTracker.jsx'
@@ -36,6 +37,7 @@ export default function App() {
           <StepControls />
           {mode === 'multi' && <CompareInput />}
           <RecordReplay />
+          <ConjectureInfo />
         </>
       }
       main={

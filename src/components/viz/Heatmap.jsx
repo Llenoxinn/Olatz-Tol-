@@ -30,12 +30,16 @@ export default function Heatmap() {
     const times = stoppingTimes(maxN)
     const maxT = Math.max(...times)
     const gridSize = Math.ceil(Math.sqrt(maxN))
-    const cellSize = Math.floor(Math.min(W, H - 40) / gridSize)
+
+    // Reserve space: 10 top, 30 bottom for legend + title
+    const mapArea = H - 50
+    const cellSize = Math.floor(Math.min(W, mapArea) / gridSize)
     const mapW = cellSize * gridSize
     const mapH = cellSize * gridSize
     const offsetX = (W - mapW) / 2
-    const offsetY = 10
+    const offsetY = 8
 
+    // Draw grid
     for (let i = 0; i < maxN; i++) {
       const col = i % gridSize
       const row = Math.floor(i / gridSize)
@@ -50,16 +54,18 @@ export default function Heatmap() {
       )
     }
 
-    // Border around the heatmap
+    // Border
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 1
     ctx.strokeRect(offsetX, offsetY, mapW, mapH)
 
-    // Legend bar
-    const legendW = 200
+    // --- Legend area below the grid ---
+    const legendY = offsetY + mapH + 12
+    const legendW = 180
     const legendH = 8
     const legendX = (W - legendW) / 2
-    const legendY = offsetY + mapH + 16
+
+    // Gradient bar
     for (let i = 0; i < legendW; i++) {
       const t = i / legendW
       const [r, g, b] = getColor(t)
@@ -67,25 +73,24 @@ export default function Heatmap() {
       ctx.fillRect(legendX + i, legendY, 1, legendH)
     }
     ctx.strokeStyle = '#e5e7eb'
+    ctx.lineWidth = 0.5
     ctx.strokeRect(legendX, legendY, legendW, legendH)
 
-    // Legend labels
+    // Legend labels - below the bar
     ctx.fillStyle = '#6b7280'
     ctx.font = '10px Inter, monospace'
-    ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
+    ctx.textAlign = 'left'
     ctx.fillText('1', legendX, legendY + legendH + 4)
-    ctx.textAlign = 'center'
-    ctx.fillText('Stopping time', legendX + legendW / 2, legendY + legendH + 4)
     ctx.textAlign = 'right'
-    ctx.fillText(`${maxT}`, legendX + legendW, legendY + legendH + 4)
+    ctx.fillText(String(maxT), legendX + legendW, legendY + legendH + 4)
 
-    // Title
+    // Title - at the very bottom
     ctx.fillStyle = '#374151'
     ctx.font = '11px Inter, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
-    ctx.fillText(`n = 1 \u2014 ${maxN.toLocaleString()}   \u00b7   ${gridSize}\u00d7${gridSize} grid`, W / 2, H - 4)
+    ctx.fillText(`Stopping time  \u00b7  n = 1\u2013${maxN.toLocaleString()}  \u00b7  ${gridSize}\u00d7${gridSize}`, W / 2, H - 4)
   }, [maxN])
 
   return (
