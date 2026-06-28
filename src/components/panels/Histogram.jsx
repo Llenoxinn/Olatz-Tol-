@@ -2,13 +2,15 @@ import { useRef, useEffect, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { stoppingTimes } from '../../lib/collatz.js'
 
-const W = 260, H = 100
+const PAD = { top: 8, right: 10, bottom: 22, left: 32 }
+const W = 300
+const H = 140
 
 export default function Histogram() {
   const canvasRef = useRef(null)
   const maxN = useCollatzStore((s) => s.maxN)
 
-  const { bins, maxCount } = useMemo(() => {
+  const { bins, maxCount, maxTime } = useMemo(() => {
     const times = stoppingTimes(maxN)
     const maxT = Math.max(...times)
     const numBins = Math.min(60, maxT)
@@ -17,28 +19,57 @@ export default function Histogram() {
       const idx = Math.floor((t / maxT) * (numBins - 1))
       b[idx]++
     }
-    return { bins: b, maxCount: Math.max(...b) }
+    return { bins: b, maxCount: Math.max(...b), maxTime: maxT }
   }, [maxN])
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    const plotW = W - PAD.left - PAD.right
+    const plotH = H - PAD.top - PAD.bottom
 
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, H)
 
-    const barW = W / bins.length
+    // Y-axis grid + labels
+    ctx.strokeStyle = '#f3f4f6'
+    ctx.lineWidth = 1
+    ctx.fillStyle = '#9ca3af'
+    ctx.font = '9px Inter, monospace'
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
+    for (let i = 0; i <= 3; i++) {
+      const y = PAD.top + plotH - (i / 3) * plotH
+      ctx.beginPath()
+      ctx.moveTo(PAD.left, y)
+      ctx.lineTo(W - PAD.right, y)
+      ctx.stroke()
+      const val = Math.round((i / 3) * maxCount)
+      ctx.fillText(val, PAD.left - 4, y)
+    }
+
+    // Bars
+    const barW = plotW / bins.length
     for (let i = 0; i < bins.length; i++) {
-      const barH = (bins[i] / maxCount) * (H - 4)
-      const x = i * barW
-      const y = H - barH
+      const barH = (bins[i] / maxCount) * plotH
+      const x = PAD.left + i * barW
+      const y = PAD.top + plotH - barH
       const t = i / bins.length
       const g = Math.round(150 + t * 60)
       ctx.fillStyle = `rgb(${g - 60},${g},${g})`
-      ctx.fillRect(x, y, barW - 0.5, barH)
+      ctx.fillRect(x, y, Math.max(barW - 0.5, 0.5), barH)
     }
-  }, [bins, maxCount])
+
+    // X-axis labels
+    ctx.fillStyle = '#9ca3af'
+    ctx.font = '9px Inter, monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.fillText('0', PAD.left, H - PAD.bottom + 4)
+    ctx.fillText(String(maxTime), W - PAD.right, H - PAD.bottom + 4)
+    ctx.fillText('Stopping time', PAD.left + plotW / 2, H - 4)
+  }, [bins, maxCount, maxTime])
 
   return (
     <div>
@@ -47,8 +78,7 @@ export default function Histogram() {
         ref={canvasRef}
         width={W}
         height={H}
-        className="block w-full border border-gray-200 rounded"
-        style={{ aspectRatio: `${W}/${H}` }}
+        className="block border border-gray-200 rounded"
       />
     </div>
   )

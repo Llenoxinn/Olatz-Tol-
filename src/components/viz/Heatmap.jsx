@@ -31,28 +31,14 @@ export default function Heatmap() {
     const maxT = Math.max(...times)
     const gridSize = Math.ceil(Math.sqrt(maxN))
 
-    // Layout: title (20) + grid + gap (12) + legend (30) + gap (8) + description (16)
-    const titleH = 22
-    const legendH = 30
-    const descH = 16
-    const gap = 10
-    const mapArea = H - titleH - legendH - descH - gap * 3
-    const cellSize = Math.floor(Math.min(W, mapArea) / gridSize)
+    // Grid fills most of the canvas, legend on right
+    const gridMaxW = W - 200
+    const gridMaxH = H - 40
+    const cellSize = Math.floor(Math.min(gridMaxW, gridMaxH) / gridSize)
     const mapW = cellSize * gridSize
     const mapH = cellSize * gridSize
-    const offsetX = (W - mapW) / 2
-    const offsetY = titleH + gap
-
-    // Title
-    ctx.fillStyle = '#374151'
-    ctx.font = '11px Inter, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    ctx.fillText(
-      `Stopping time  \u00b7  n = 1\u2013${maxN.toLocaleString()}  \u00b7  ${gridSize}\u00d7${gridSize}`,
-      W / 2,
-      6
-    )
+    const gridX = 12
+    const gridY = 20
 
     // Draw grid
     for (let i = 0; i < maxN; i++) {
@@ -62,8 +48,8 @@ export default function Heatmap() {
       const [r, g, b] = getColor(t)
       ctx.fillStyle = `rgb(${r},${g},${b})`
       ctx.fillRect(
-        offsetX + col * cellSize,
-        offsetY + row * cellSize,
+        gridX + col * cellSize,
+        gridY + row * cellSize,
         cellSize,
         cellSize
       )
@@ -72,44 +58,69 @@ export default function Heatmap() {
     // Grid border
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 1
-    ctx.strokeRect(offsetX, offsetY, mapW, mapH)
+    ctx.strokeRect(gridX, gridY, mapW, mapH)
 
-    // Legend
-    const legendY = offsetY + mapH + gap
-    const legendBarW = 160
-    const legendBarH = 8
-    const legendBarX = (W - legendBarW) / 2
+    // Right panel
+    const rpX = gridX + mapW + 20
+    const rpY = gridY
 
-    for (let i = 0; i < legendBarW; i++) {
-      const t = i / legendBarW
+    // Title
+    ctx.fillStyle = '#111827'
+    ctx.font = 'bold 12px Inter, sans-serif'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    ctx.fillText('Stopping Time', rpX, rpY)
+
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '11px Inter, sans-serif'
+    ctx.fillText(`n = 1 \u2013 ${maxN.toLocaleString()}`, rpX, rpY + 20)
+    ctx.fillText(`${gridSize} \u00d7 ${gridSize} grid`, rpX, rpY + 36)
+
+    // Vertical legend bar
+    const legX = rpX
+    const legY = rpY + 70
+    const legW = 18
+    const legH = 200
+
+    for (let i = 0; i < legH; i++) {
+      const t = 1 - i / legH
       const [r, g, b] = getColor(t)
       ctx.fillStyle = `rgb(${r},${g},${b})`
-      ctx.fillRect(legendBarX + i, legendY, 1, legendBarH)
+      ctx.fillRect(legX, legY + i, legW, 1)
     }
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 0.5
-    ctx.strokeRect(legendBarX, legendY, legendBarW, legendBarH)
+    ctx.strokeRect(legX, legY, legW, legH)
 
     // Legend labels
-    ctx.fillStyle = '#9ca3af'
-    ctx.font = '9px Inter, monospace'
-    ctx.textBaseline = 'top'
+    ctx.fillStyle = '#374151'
+    ctx.font = '10px Inter, monospace'
     ctx.textAlign = 'left'
-    ctx.fillText('1', legendBarX, legendY + legendBarH + 3)
-    ctx.textAlign = 'right'
-    ctx.fillText(String(maxT), legendBarX + legendBarW, legendY + legendBarH + 3)
+    ctx.textBaseline = 'middle'
+    ctx.fillText(String(maxT), legX + legW + 8, legY)
+    ctx.fillText('1', legX + legW + 8, legY + legH)
+    ctx.fillStyle = '#9ca3af'
+    ctx.font = '9px Inter, sans-serif'
+    ctx.fillText('max steps', legX + legW + 8, legY - 14)
+    ctx.fillText('min steps', legX + legW + 8, legY + legH + 14)
 
     // Description
-    const descY = legendY + legendBarH + 20
     ctx.fillStyle = '#6b7280'
     ctx.font = '10px Inter, sans-serif'
-    ctx.textAlign = 'center'
+    ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
-    ctx.fillText(
-      'Each cell = a starting number. Color = steps to reach 1.',
-      W / 2,
-      descY
-    )
+    const descY = legY + legH + 36
+    ctx.fillText('Each cell represents', rpX, descY)
+    ctx.fillText('a starting number.', rpX, descY + 16)
+    ctx.fillText('Color intensity =', rpX, descY + 36)
+    ctx.fillText('steps to reach 1.', rpX, descY + 52)
+
+    // Pattern note
+    ctx.fillStyle = '#9ca3af'
+    ctx.font = '9px Inter, sans-serif'
+    ctx.fillText('Powers of 2 (dark) reach', rpX, descY + 80)
+    ctx.fillText('1 fastest. Clusters form', rpX, descY + 94)
+    ctx.fillText('around them.', rpX, descY + 108)
   }, [maxN])
 
   return (

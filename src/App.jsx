@@ -1,6 +1,7 @@
 import Layout from './components/Layout.jsx'
 import ModeSelector from './components/controls/ModeSelector.jsx'
 import NumberInput from './components/controls/NumberInput.jsx'
+import RangeInput from './components/controls/RangeInput.jsx'
 import StepControls from './components/controls/StepControls.jsx'
 import CompareInput from './components/controls/CompareInput.jsx'
 import RecordReplay from './components/controls/RecordReplay.jsx'
@@ -34,6 +35,7 @@ export default function App() {
         <>
           <ModeSelector />
           <NumberInput />
+          <RangeInput />
           <StepControls />
           {mode === 'multi' && <CompareInput />}
           <RecordReplay />
