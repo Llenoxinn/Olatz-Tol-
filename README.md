@@ -21,13 +21,13 @@ npm run dev
 
 ## The Conjecture
 
-Take any positive integer *n*.
+Take any positive integer *n* and apply the following rules:
 
-- If *n* is even, divide by 2.
-- If *n* is odd, multiply by 3 and add 1.
-- Repeat until you reach 1.
+- If *n* is even → divide by 2
+- If *n* is odd → multiply by 3 and add 1
+- Repeat until *n* = 1
 
-The conjecture: every positive integer eventually reaches 1. Verified up to 2^68. No proof exists.
+The Collatz conjecture states that this process always terminates at 1, regardless of the starting value. It has been verified computationally for all integers up to 2<sup>68</sup>, yet no formal proof exists.
 
 ```
 f(n) = n / 2      if n is even
@@ -40,18 +40,18 @@ f(n) = 3n + 1     if n is odd
 
 | Mode | Description |
 |------|-------------|
-| **Path** | Animated line graph with log scale. Red = ascending, blue = descending. |
-| **Heatmap** | Grid of numbers colored by stopping time. Adjustable range. |
-| **Tree** | Directed graph of all paths converging to 1. |
-| **Multi** | Overlay two sequences to see where they merge. |
-| **Spiral** | Polar layout — angle is step count, radius is value. |
+| **Path** | Animated line graph on a log scale. Red indicates ascent (3n+1), blue indicates descent (n/2). |
+| **Heatmap** | Color-coded grid of integers where hue maps to stopping time. Range is adjustable up to 50,000. |
+| **Tree** | Directed acyclic graph showing all sequences converging to 1. |
+| **Multi** | Overlays two independent sequences to highlight merge points. |
+| **Spiral** | Polar coordinate layout — angle represents step index, radius represents value. |
 
 ## Features
 
-- Play, pause, and step-through animation with adjustable speed
-- Pitch-mapped audio feedback
-- Save and load sequences
-- Delay record tracker
-- Statistics panel (stopping time, peak value, odd/even ratio)
-- Stopping time distribution histogram
-- Export visualization as transparent PNG
+- Play, pause, and step-through animation with configurable speed
+- Pitch-mapped audio feedback via Web Audio API
+- Save and load sequences for later review
+- Delay record tracker highlighting known long-delay integers
+- Statistics panel with stopping time, peak value, and odd/even ratio
+- Stopping time distribution histogram across the full range
+- Export any visualization as a transparent PNG
