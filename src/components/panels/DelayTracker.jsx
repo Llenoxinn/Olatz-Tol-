@@ -1,33 +1,39 @@
 import { useMemo } from 'react'
-import { AlertCircle } from 'lucide-react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { delayRecords } from '../../lib/collatz.js'
 
 export default function DelayTracker() {
   const n = useCollatzStore((s) => s.n)
   const maxN = useCollatzStore((s) => s.maxN)
+  const setN = useCollatzStore((s) => s.setN)
 
   const records = useMemo(() => delayRecords(maxN), [maxN])
-  const isRecord = records.includes(n)
   const rank = records.indexOf(n)
 
   return (
-    <div>
-      <div className="section-title">Delay Records</div>
-      {isRecord && (
-        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium px-2 py-1.5 rounded mb-1.5">
-          <AlertCircle size={13} />
-          Record #{rank + 1}
-        </div>
-      )}
-      <p className="text-xs text-gray-500">
-        {records.length} delay records up to {maxN.toLocaleString()}
+    <div className="flex h-full flex-col">
+      <h2 className="section-title">Delay records</h2>
+      <div className="flex items-baseline gap-2">
+        <span className="font-display text-4xl leading-none font-extrabold text-fg tabular-nums">{records.length}</span>
+        <span className="text-xs text-dim">up to {maxN.toLocaleString()}</span>
+      </div>
+      <p className="mt-2 text-xs leading-snug text-dim">
+        {rank >= 0
+          ? <span className="text-neon">{n.toLocaleString()} is record #{rank + 1}</span>
+          : 'Numbers that take longer than every smaller one.'}
       </p>
-      {records.length > 0 && (
-        <p className="text-xs text-gray-400 font-mono mt-0.5">
-          Largest: {records[records.length - 1]}
-        </p>
-      )}
+      <div className="mt-auto flex max-h-[52px] flex-wrap gap-1.5 overflow-hidden">
+        {records.slice(-8).reverse().map((r) => (
+          <button
+            key={r}
+            onClick={() => setN(r)}
+            aria-pressed={r === n}
+            className={`chip ${r === n ? 'border-neon/60 text-neon' : ''}`}
+          >
+            {r.toLocaleString()}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import Layout from './components/Layout.jsx'
+import Intro from './components/Intro.jsx'
+import MagicBento, { BentoCard } from './components/MagicBento.jsx'
 import ModeSelector from './components/controls/ModeSelector.jsx'
-import NumberInput from './components/controls/NumberInput.jsx'
-import RangeInput from './components/controls/RangeInput.jsx'
+import NumberField from './components/controls/NumberField.jsx'
 import StepControls from './components/controls/StepControls.jsx'
 import CompareInput from './components/controls/CompareInput.jsx'
 import RecordReplay from './components/controls/RecordReplay.jsx'
@@ -16,6 +18,7 @@ import Heatmap from './components/viz/Heatmap.jsx'
 import ConvergenceTree from './components/viz/ConvergenceTree.jsx'
 import MultiOverlay from './components/viz/MultiOverlay.jsx'
 import Spiral from './components/viz/Spiral.jsx'
+import usePlayback from './hooks/usePlayback.js'
 import useCollatzStore from './store/useCollatzStore.js'
 
 const VIZ = {
@@ -28,36 +31,56 @@ const VIZ = {
 
 export default function App() {
   const mode = useCollatzStore((s) => s.mode)
+  const n = useCollatzStore((s) => s.n)
+  const maxN = useCollatzStore((s) => s.maxN)
+  const setN = useCollatzStore((s) => s.setN)
+  const setMaxN = useCollatzStore((s) => s.setMaxN)
+  const [intro, setIntro] = useState(true)
+  usePlayback()
+
   const Viz = VIZ[mode]
 
   return (
-    <Layout
-      sidebar={
-        <>
-          <ModeSelector />
-          <NumberInput />
-          <RangeInput />
-          <StepControls />
-          {mode === 'multi' && <CompareInput />}
-          <RecordReplay />
-          <ConjectureInfo />
-        </>
-      }
-      main={
-        <>
-          <div className="flex-1 min-h-0 p-2 overflow-hidden">
-            <VizContainer>
-              {(size) => <Viz w={size.w} h={size.h} />}
-            </VizContainer>
-          </div>
-          <div className="shrink-0 border-t border-gray-200 pt-2 pb-2 px-4 grid grid-cols-[auto_1fr_auto_auto] gap-x-6 gap-y-1 items-start overflow-x-auto">
-            <StatsPanel />
-            <Histogram />
-            <DelayTracker />
-            <UnsolvedPanel />
-          </div>
-        </>
-      }
-    />
+    <>
+      <Layout
+        inert={intro}
+        sidebar={
+          <>
+            <ModeSelector />
+            <NumberField label="Starting number" value={n} onChange={setN} min={1} max={100000} sliderMax={10000} />
+            <NumberField label="Range" value={maxN} onChange={setMaxN} min={100} max={50000} step={100} />
+            {mode !== 'heatmap' && mode !== 'tree' && <StepControls />}
+            {mode === 'multi' && <CompareInput />}
+            <RecordReplay />
+            <ConjectureInfo />
+          </>
+        }
+        main={
+          <>
+            <div className="h-[62svh] min-h-80 shrink-0 md:h-auto md:min-h-[360px] md:flex-1 md:shrink">
+              <VizContainer>{(size) => <Viz w={size.w} h={size.h} />}</VizContainer>
+            </div>
+            <div className="shrink-0">
+              <MagicBento
+                columns={4}
+                rowHeight={200}
+                gap={12}
+                radius={20}
+                enableBorderGlow={true}
+                enableSpotlight={true}
+                spotlightRadius={300}
+                clickEffect={true}
+              >
+                <BentoCard><StatsPanel /></BentoCard>
+                <BentoCard><Histogram /></BentoCard>
+                <BentoCard><DelayTracker /></BentoCard>
+                <BentoCard><UnsolvedPanel /></BentoCard>
+              </MagicBento>
+            </div>
+          </>
+        }
+      />
+      {intro && <Intro onDone={() => setIntro(false)} />}
+    </>
   )
 }

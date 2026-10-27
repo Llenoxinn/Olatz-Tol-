@@ -1,0 +1,97 @@
+.bento {
+  container: bento / inline-size;
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--bento-cols), minmax(0, 1fr));
+  grid-auto-rows: var(--bento-row);
+  gap: var(--bento-gap);
+}
+
+@container bento (max-width: 880px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container bento (max-width: 500px) {
+  .bento-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.bento-card {
+  --glow-x: 50%;
+  --glow-y: 50%;
+  --glow-intensity: 0;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 16px 18px;
+  border-radius: var(--bento-radius);
+  background: var(--color-panel);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+
+/* A glow that only paints the 1px border, centred on the pointer. */
+.bento-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    var(--bento-glow-radius) circle at var(--glow-x) var(--glow-y),
+    rgba(var(--bento-glow), calc(var(--glow-intensity) * 0.9)) 0%,
+    rgba(var(--bento-glow), calc(var(--glow-intensity) * 0.35)) 30%,
+    transparent 60%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+.bento-fx {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.bento-ripple {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(var(--bento-glow), 0.28) 0%,
+    rgba(var(--bento-glow), 0.1) 35%,
+    transparent 70%
+  );
+}
+
+.bento-spotlight {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: calc(var(--bento-spot) * 2);
+  height: calc(var(--bento-spot) * 2);
+  margin: calc(var(--bento-spot) * -1) 0 0 calc(var(--bento-spot) * -1);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle,
+    rgba(var(--bento-glow), 0.12) 0%,
+    rgba(var(--bento-glow), 0.05) 30%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+  transition: opacity 200ms ease;
+  will-change: transform, opacity;
+}

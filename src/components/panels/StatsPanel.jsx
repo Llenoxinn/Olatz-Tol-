@@ -1,35 +1,33 @@
 import { useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
-import { stoppingTime, maxValue, oddEvenRatio } from '../../lib/collatz.js'
+import { stats } from '../../lib/collatz.js'
 
 export default function StatsPanel() {
   const n = useCollatzStore((s) => s.n)
-
-  const stats = useMemo(() => ({
-    stoppingTime: stoppingTime(n),
-    maxValue: maxValue(n),
-    ratio: oddEvenRatio(n),
-  }), [n])
+  const s = useMemo(() => stats(n), [n])
 
   return (
-    <div>
-      <div className="section-title">Statistics</div>
-      <dl className="text-xs">
-        <Row label="Stopping time" value={stats.stoppingTime} />
-        <Row label="Max value" value={stats.maxValue.toLocaleString()} />
-        <Row label="Odd steps" value={stats.ratio.odd} />
-        <Row label="Even steps" value={stats.ratio.even} />
-        <Row label="Odd/Even" value={stats.ratio.ratio} />
+    <div className="flex h-full flex-col">
+      <h2 className="section-title">Statistics &middot; n = {n.toLocaleString()}</h2>
+      <div className="flex items-baseline gap-2">
+        <span className="font-display text-4xl leading-none font-extrabold text-neon tabular-nums">{s.steps}</span>
+        <span className="text-xs text-dim">steps to reach 1</span>
+      </div>
+      <dl className="mt-auto grid grid-cols-2 gap-x-4 gap-y-2.5">
+        <Stat label="Peak" value={s.peak.toLocaleString()} />
+        <Stat label="Peak at step" value={s.peakStep} />
+        <Stat label="3n+1 steps" value={s.odd} />
+        <Stat label="n/2 steps" value={s.even} />
       </dl>
     </div>
   )
 }
 
-function Row({ label, value }) {
+function Stat({ label, value }) {
   return (
-    <div className="flex justify-between items-baseline py-1 border-b border-gray-100 last:border-0">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className="font-mono font-medium text-gray-900 ml-4">{value}</dd>
+    <div className="min-w-0">
+      <dt className="text-xs text-faint">{label}</dt>
+      <dd className="truncate text-sm font-medium text-fg tabular-nums">{value}</dd>
     </div>
   )
 }

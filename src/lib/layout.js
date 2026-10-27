@@ -1,11 +1,12 @@
-export function computeTreeLayout(nodes, links, width, height) {
+// Rows by stopping time (1 at the bottom), numbers spread left to right within a row.
+export function computeTreeLayout(nodes, width, height) {
   const byDepth = new Map()
   for (const n of nodes) {
     if (!byDepth.has(n.depth)) byDepth.set(n.depth, [])
     byDepth.get(n.depth).push(n)
   }
-  const maxDepth = Math.max(...byDepth.keys())
-  const margin = 40
+  const maxDepth = Math.max(...byDepth.keys(), 1)
+  const margin = 28
   const positions = new Map()
 
   for (const [depth, group] of byDepth) {
@@ -23,19 +24,13 @@ export function computeTreeLayout(nodes, links, width, height) {
   return positions
 }
 
-export function computeSpiralPath(steps, maxVal, canvasW, canvasH) {
+// Angle advances half a radian per step; radius is log₂ of the value.
+export function computeSpiralPath(values, maxVal, canvasW, canvasH) {
   const cx = canvasW / 2
   const cy = canvasH / 2
   const scale = Math.min(canvasW, canvasH) / 2 / Math.log2(maxVal + 1)
-  const points = []
-  for (let i = 0; i < steps.length; i++) {
-    const angle = i * 0.5
-    const r = Math.log2(steps[i].value + 1) * scale * 0.8
-    points.push({
-      x: cx + r * Math.cos(angle),
-      y: cy + r * Math.sin(angle),
-      ...steps[i],
-    })
-  }
-  return points
+  return values.map((v, i) => {
+    const r = Math.log2(v + 1) * scale * 0.8
+    return { x: cx + r * Math.cos(i * 0.5), y: cy + r * Math.sin(i * 0.5) }
+  })
 }

@@ -1,113 +1,117 @@
-import { useRef, useEffect } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 import { stoppingTimes } from '../../lib/collatz.js'
+import { COLORS } from '../../lib/constants.js'
+import CanvasView, { Caption, CAPTION_H } from './CanvasView.jsx'
 
-function getColor(t) {
-  if (t < 0.05) return [236, 253, 245]
-  if (t < 0.15) return [167, 243, 208]
-  if (t < 0.3) return [52, 211, 153]
-  if (t < 0.5) return [16, 185, 129]
-  if (t < 0.7) return [5, 150, 105]
-  if (t < 0.85) return [4, 120, 87]
-  if (t < 0.95) return [6, 95, 70]
-  return [6, 78, 59]
+// Few steps stay near black, the slowest numbers burn neon to white.
+const STOPS = [
+  [0, [11, 19, 11]],
+  [0.4, [20, 92, 8]],
+  [0.75, [57, 255, 20]],
+  [1, [242, 255, 233]],
+]
+const GRADIENT = `linear-gradient(90deg, ${STOPS.map(([t, c]) => `rgb(${c}) ${t * 100}%`).join(', ')})`
+
+const RAMP = new Uint8Array(256 * 3)
+for (let i = 0; i < 256; i++) {
+  const t = i / 255
+  const k = STOPS.findIndex(([s]) => s >= t)
+  const [t0, c0] = STOPS[Math.max(k - 1, 0)]
+  const [t1, c1] = STOPS[k]
+  const f = t1 === t0 ? 0 : (t - t0) / (t1 - t0)
+  for (let j = 0; j < 3; j++) RAMP[i * 3 + j] = Math.round(c0[j] + (c1[j] - c0[j]) * f)
 }
 
-export default function Heatmap({ w = 700, h = 450 }) {
-  const canvasRef = useRef(null)
+// Whole-pixel cells when the grid fits, so neighbours never blur together.
+function gridBox(w, h, side) {
+  const avail = Math.max(Math.min(w, h - CAPTION_H) - 32, 1)
+  const fit = avail / side
+  const cell = fit >= 1 ? Math.floor(fit) : fit
+  const size = cell * side
+  return { x: (w - size) / 2, y: (h - CAPTION_H - size) / 2, cell, size }
+}
+
+export default function Heatmap({ w, h }) {
   const maxN = useCollatzStore((s) => s.maxN)
+  const n = useCollatzStore((s) => s.n)
+  const setN = useCollatzStore((s) => s.setN)
+  const [hover, setHover] = useState(null)
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
+  const times = useMemo(() => stoppingTimes(maxN), [maxN])
+  const maxT = useMemo(() => times.reduce((m, t) => (t > m ? t : m), 1), [times])
+  const side = Math.ceil(Math.sqrt(maxN))
 
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, w, h)
-
-    const times = stoppingTimes(maxN)
-    const maxT = Math.max(...times)
-    const gridSize = Math.ceil(Math.sqrt(maxN))
-
-    const gridMaxW = w - 200
-    const gridMaxH = h - 40
-    const cellSize = Math.floor(Math.min(gridMaxW, gridMaxH) / gridSize)
-    const mapW = cellSize * gridSize
-    const mapH = cellSize * gridSize
-    const gridX = 12
-    const gridY = 20
-
+  // One pixel per number, scaled up with smoothing off at draw time.
+  const image = useMemo(() => {
+    const c = document.createElement('canvas')
+    c.width = c.height = side
+    const ctx = c.getContext('2d')
+    const img = ctx.createImageData(side, side)
     for (let i = 0; i < maxN; i++) {
-      const col = i % gridSize
-      const row = Math.floor(i / gridSize)
-      const t = times[i] / maxT
-      const [r, g, b] = getColor(t)
-      ctx.fillStyle = `rgb(${r},${g},${b})`
-      ctx.fillRect(gridX + col * cellSize, gridY + row * cellSize, cellSize, cellSize)
+      const r = Math.round((times[i] / maxT) * 255) * 3
+      img.data[i * 4] = RAMP[r]
+      img.data[i * 4 + 1] = RAMP[r + 1]
+      img.data[i * 4 + 2] = RAMP[r + 2]
+      img.data[i * 4 + 3] = 255
     }
+    ctx.putImageData(img, 0, 0)
+    return c
+  }, [times, maxT, maxN, side])
 
-    ctx.strokeStyle = '#e5e7eb'
-    ctx.lineWidth = 1
-    ctx.strokeRect(gridX, gridY, mapW, mapH)
-
-    const rpX = gridX + mapW + 20
-    const rpY = gridY
-
-    ctx.fillStyle = '#111827'
-    ctx.font = 'bold 12px Inter, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.fillText('Stopping Time', rpX, rpY)
-
-    ctx.fillStyle = '#6b7280'
-    ctx.font = '11px Inter, sans-serif'
-    ctx.fillText(`n = 1 \u2013 ${maxN.toLocaleString()}`, rpX, rpY + 20)
-    ctx.fillText(`${gridSize} \u00d7 ${gridSize} grid`, rpX, rpY + 36)
-
-    const legX = rpX
-    const legY = rpY + 70
-    const legW = 18
-    const legH = Math.min(200, h - 180)
-
-    for (let i = 0; i < legH; i++) {
-      const t = 1 - i / legH
-      const [r, g, b] = getColor(t)
-      ctx.fillStyle = `rgb(${r},${g},${b})`
-      ctx.fillRect(legX, legY + i, legW, 1)
+  const draw = useCallback((ctx, w, h) => {
+    const box = gridBox(w, h, side)
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(image, box.x, box.y, box.size, box.size)
+    if (n <= maxN) {
+      const s = Math.max(box.cell, 5)
+      const cx = box.x + ((n - 1) % side) * box.cell + box.cell / 2
+      const cy = box.y + Math.floor((n - 1) / side) * box.cell + box.cell / 2
+      ctx.strokeStyle = COLORS.fg
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(cx - s / 2 - 1, cy - s / 2 - 1, s + 2, s + 2)
     }
-    ctx.strokeStyle = '#e5e7eb'
-    ctx.lineWidth = 0.5
-    ctx.strokeRect(legX, legY, legW, legH)
+  }, [image, side, n, maxN])
 
-    ctx.fillStyle = '#374151'
-    ctx.font = '10px Inter, monospace'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(String(maxT), legX + legW + 8, legY)
-    ctx.fillText('1', legX + legW + 8, legY + legH)
-    ctx.fillStyle = '#9ca3af'
-    ctx.font = '9px Inter, sans-serif'
-    ctx.fillText('max steps', legX + legW + 8, legY - 14)
-    ctx.fillText('min steps', legX + legW + 8, legY + legH + 14)
-
-    const descY = legY + legH + 36
-    ctx.fillStyle = '#6b7280'
-    ctx.font = '10px Inter, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.fillText('Each cell = a starting number.', rpX, descY)
-    ctx.fillText('Color = steps to reach 1.', rpX, descY + 16)
-  }, [maxN, w, h])
+  const pick = (e) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    const box = gridBox(w, h, side)
+    const col = Math.floor((e.clientX - r.left - box.x) / box.cell)
+    const row = Math.floor((e.clientY - r.top - box.y) / box.cell)
+    if (col < 0 || row < 0 || col >= side || row >= side) return null
+    const v = row * side + col + 1
+    return v <= maxN ? v : null
+  }
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={w}
-      height={h}
-      className="block"
-      style={{ width: w, height: h }}
-    />
+    <>
+      <CanvasView
+        w={w}
+        h={h}
+        draw={draw}
+        label={`Stopping times for 1 to ${maxN}`}
+        onPointerMove={(e) => setHover(pick(e))}
+        onPointerLeave={() => setHover(null)}
+        onClick={(e) => {
+          const v = pick(e)
+          if (v) setN(v)
+        }}
+        style={{ width: w, height: h, cursor: hover ? 'pointer' : 'default' }}
+      />
+      <Caption
+        left={
+          hover
+            ? <span className="text-fg">n = {hover.toLocaleString()} &middot; {times[hover - 1]} steps</span>
+            : <>1&ndash;{maxN.toLocaleString()}<span className="text-faint">{side} &times; {side} &middot; click a cell to inspect it</span></>
+        }
+        right={
+          <>
+            0
+            <span className="h-1.5 w-24 rounded-full" style={{ background: GRADIENT }} />
+            {maxT} steps
+          </>
+        }
+      />
+    </>
   )
 }

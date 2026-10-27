@@ -1,31 +1,78 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* `static` keeps every token on :root, since the plain CSS files and canvases read them too.
+   Canvas colors are mirrored in src/lib/constants.js. */
+@theme static {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Unbounded", "Geist", ui-sans-serif, sans-serif;
+
+  --color-ink: #050605;
+  --color-panel: #0b0e0b;
+  --color-raised: #141a14;
+  --color-line: #1f281f;
+  --color-fg: #eef5ec;
+  --color-dim: #9aa797;
+  --color-faint: #76836f;
+  --color-neon: #39ff14;
+  --color-neon-soft: #a6ff8f;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
 
 @layer base {
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #d1d5db #f9fafb;
+  html {
+    background: var(--color-ink);
   }
   body {
-    @apply font-sans text-gray-900 bg-white antialiased;
+    @apply bg-ink font-sans text-fg antialiased;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+  ::selection {
+    background: var(--color-neon);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-neon);
+    outline-offset: 2px;
   }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-[color,background-color,scale] duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-30;
   }
   .btn-primary {
-    @apply bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800;
+    @apply bg-neon text-ink hover:bg-neon-soft;
   }
   .btn-ghost {
-    @apply text-gray-600 hover:bg-gray-100 active:bg-gray-200;
+    @apply text-dim hover:bg-raised hover:text-fg;
+  }
+  .btn-icon {
+    @apply px-1.5 py-1;
   }
   .input {
-    @apply w-full px-3 py-1.5 text-sm border border-gray-200 rounded bg-white text-gray-900 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-colors;
+    /* 16px on phones, or iOS Safari zooms the page on focus. */
+    @apply w-full rounded-lg border border-line bg-ink px-3 py-1.5 text-base text-fg tabular-nums transition-colors placeholder:text-faint focus:border-neon/60 sm:text-sm;
+  }
+  .range {
+    @apply w-full cursor-pointer accent-neon;
   }
   .section-title {
-    @apply text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2;
+    @apply mb-2 text-xs font-medium text-dim;
+  }
+  .chip {
+    @apply rounded-md border border-line px-2 py-0.5 text-xs text-dim tabular-nums transition-colors hover:border-neon/50 hover:text-fg;
+  }
+
+  /* The header logo; the intro animates into this exact shape. */
+  .wordmark {
+    @apply inline-flex items-baseline font-display leading-none;
+  }
+  .wordmark-badge {
+    @apply ml-[0.12em] inline-block rounded-[0.14em] px-[0.22em] pt-[0.08em] pb-[0.1em] font-extrabold;
   }
 }

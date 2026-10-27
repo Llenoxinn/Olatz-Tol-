@@ -1,10 +1,4 @@
-import {
-  TrendingUp,
-  Grid3X3,
-  GitBranch,
-  Layers,
-  Compass,
-} from 'lucide-react'
+import { TrendingUp, Grid3X3, GitBranch, Layers, Compass } from 'lucide-react'
 import { MODES } from '../../lib/constants.js'
 import useCollatzStore from '../../store/useCollatzStore.js'
 
@@ -21,22 +15,22 @@ export default function ModeSelector() {
   const setMode = useCollatzStore((s) => s.setMode)
 
   return (
-    <div>
-      <div className="section-title">Mode</div>
-      <div className="flex flex-col gap-0.5">
+    <div className="sm:col-span-2">
+      <h2 className="section-title">Mode</h2>
+      <div className="flex flex-wrap gap-1 md:flex-col md:gap-0.5">
         {MODES.map((m) => {
           const Icon = ICONS[m.id]
+          const active = mode === m.id
           return (
             <button
               key={m.id}
               onClick={() => setMode(m.id)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 text-sm rounded transition-colors ${
-                mode === m.id
-                  ? 'bg-emerald-50 text-emerald-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50'
+              aria-pressed={active}
+              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors duration-150 ${
+                active ? 'bg-neon/10 font-medium text-neon' : 'text-dim hover:bg-raised hover:text-fg'
               }`}
             >
-              <Icon size={14} strokeWidth={mode === m.id ? 2 : 1.5} />
+              <Icon size={14} strokeWidth={active ? 2 : 1.5} />
               {m.label}
             </button>
           )

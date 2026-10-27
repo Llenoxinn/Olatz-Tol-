@@ -1,135 +1,99 @@
-import { useRef, useEffect, useMemo } from 'react'
-import useCollatzStore from '../../store/useCollatzStore.js'
+import { useCallback, useMemo } from 'react'
+import useCollatzStore, { lastStep } from '../../store/useCollatzStore.js'
 import { sequence, convergencePoint } from '../../lib/collatz.js'
-import useAnimation from '../../hooks/useAnimation.js'
-import useStepSound from '../../hooks/useStepSound.js'
+import { logAxes, polyline, drawHead } from '../../lib/canvas.js'
+import { COLORS, FONT } from '../../lib/constants.js'
+import CanvasView, { Caption, Key, CAPTION_H } from './CanvasView.jsx'
 
-const PAD = 55
+const PAD = { top: 28, right: 28, bottom: 40 + CAPTION_H }
 
-export default function MultiOverlay({ w = 700, h = 450 }) {
-  const canvasRef = useRef(null)
+export default function MultiOverlay({ w, h }) {
   const n = useCollatzStore((s) => s.n)
   const compareN = useCollatzStore((s) => s.compareN)
   const stepIndex = useCollatzStore((s) => s.stepIndex)
-
-  useAnimation()
-  useStepSound()
+  const last = useCollatzStore(lastStep)
 
   const seqA = useMemo(() => sequence(n), [n])
   const seqB = useMemo(() => (compareN ? sequence(compareN) : null), [compareN])
-  const mergeVal = useMemo(
-    () => (compareN ? convergencePoint(n, compareN) : null),
-    [n, compareN]
-  )
+  const merge = useMemo(() => (compareN ? convergencePoint(n, compareN) : null), [n, compareN])
 
-  const displayLen = compareN
-    ? Math.max(seqA.length, seqB.length)
-    : Math.min(stepIndex + 1, seqA.length)
+  // Both paths share one step axis, so the merge shows up as a horizontal offset.
+  const draw = useCallback((ctx, w, h) => {
+    const paths = seqB ? [[seqA, COLORS.up], [seqB, COLORS.down]] : [[seqA, COLORS.up]]
+    let peak = 1
+    for (const [seq] of paths) for (const v of seq) if (v > peak) peak = v
+    const { x, y } = logAxes(ctx, w, h, { peak, last, pad: PAD })
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, w, h)
-
-    const allVals = [...seqA, ...(seqB || [])]
-    const maxV = Math.max(...allVals)
-    const logMax = Math.log2(maxV || 1)
-    const plotW = w - PAD * 2
-    const plotH = h - PAD * 2
-
-    ctx.strokeStyle = '#f3f4f6'
-    ctx.lineWidth = 1
-    for (let i = 0; i <= 5; i++) {
-      const y = PAD + (i / 5) * plotH
-      ctx.beginPath()
-      ctx.moveTo(PAD, y)
-      ctx.lineTo(w - PAD, y)
-      ctx.stroke()
-    }
-
-    const xScale = (i, len) => PAD + (i / Math.max(len - 1, 1)) * plotW
-    const yScale = (v) => {
-      const logV = Math.log2(Math.max(v, 1))
-      return PAD + plotH - (logMax > 0 ? (logV / logMax) * plotH : plotH / 2)
-    }
-
-    function drawSeq(seq, color, alpha) {
-      const len = seq.length
-      ctx.lineWidth = 1.5
-      ctx.lineCap = 'round'
-      ctx.globalAlpha = alpha
-      ctx.beginPath()
-      ctx.moveTo(xScale(0, len), yScale(seq[0]))
-      for (let i = 1; i < len; i++) ctx.lineTo(xScale(i, len), yScale(seq[i]))
-      ctx.strokeStyle = color
-      ctx.stroke()
-      ctx.globalAlpha = 1
-    }
-
-    drawSeq(seqA.slice(0, displayLen), '#2563eb', compareN ? 0.5 : 1)
-
-    if (seqB && compareN) {
-      drawSeq(seqB.slice(0, displayLen), '#dc2626', 0.5)
-      if (mergeVal) {
-        const idxA = seqA.indexOf(mergeVal)
-        const idxB = seqB.indexOf(mergeVal)
-        if (idxA >= 0 && idxB >= 0 && idxA < displayLen && idxB < displayLen) {
-          const mx = (xScale(idxA, seqA.length) + xScale(idxB, seqB.length)) / 2
-          const my = yScale(mergeVal)
-          ctx.strokeStyle = '#059669'
-          ctx.lineWidth = 2
-          ctx.beginPath()
-          ctx.arc(mx, my, 7, 0, Math.PI * 2)
-          ctx.stroke()
-          ctx.fillStyle = '#059669'
-          ctx.beginPath()
-          ctx.arc(mx, my, 3, 0, Math.PI * 2)
-          ctx.fill()
-          ctx.fillStyle = '#374151'
-          ctx.font = '10px Inter, monospace'
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'bottom'
-          ctx.fillText(`merge: ${mergeVal.toLocaleString()}`, mx, my - 10)
-        }
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    for (const [seq, color] of paths) {
+      const end = seq.length - 1
+      ctx.lineWidth = 1.25
+      ctx.strokeStyle = COLORS.ghost
+      ctx.stroke(polyline(seq, x, y, 0, end))
+      const at = Math.min(stepIndex, end)
+      if (at > 0) {
+        ctx.lineWidth = 2
+        ctx.strokeStyle = color
+        ctx.stroke(polyline(seq, x, y, 0, at))
       }
-      ctx.fillStyle = '#2563eb'
-      ctx.fillRect(12, 12, 12, 3)
-      ctx.fillStyle = '#6b7280'
-      ctx.font = '10px Inter, sans-serif'
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(`n\u2081 = ${n}`, 28, 14)
-      ctx.fillStyle = '#dc2626'
-      ctx.fillRect(12, 24, 12, 3)
-      ctx.fillStyle = '#6b7280'
-      ctx.fillText(`n\u2082 = ${compareN}`, 28, 26)
     }
 
-    ctx.fillStyle = '#f9fafb'
-    ctx.fillRect(0, h - 24, w, 24)
-    ctx.fillStyle = '#6b7280'
-    ctx.font = '10px Inter, monospace'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(`step ${stepIndex}`, 12, h - 12)
-    if (compareN) {
-      ctx.textAlign = 'right'
-      ctx.fillText(`${mergeVal ? 'converges at ' + mergeVal.toLocaleString() : 'no merge yet'}`, w - 12, h - 12)
+    if (merge !== null) {
+      const ia = seqA.indexOf(merge)
+      const ib = seqB.indexOf(merge)
+      const my = y(merge)
+      ctx.setLineDash([3, 4])
+      ctx.strokeStyle = COLORS.dim
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(x(ia), my)
+      ctx.lineTo(x(ib), my)
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.lineWidth = 1.5
+      for (const i of [ia, ib]) {
+        ctx.strokeStyle = stepIndex >= i ? COLORS.neon : COLORS.faint
+        ctx.beginPath()
+        ctx.arc(x(i), my, 6, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      // Backed label so it stays legible over the lines.
+      const label = `merge ${merge.toLocaleString()}`
+      const lx = (x(ia) + x(ib)) / 2
+      ctx.font = `11px ${FONT}`
+      const lw = ctx.measureText(label).width + 10
+      ctx.fillStyle = COLORS.ink
+      ctx.fillRect(lx - lw / 2, my - 26, lw, 15)
+      ctx.fillStyle = COLORS.fg
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      ctx.fillText(label, lx, my - 13)
     }
-  }, [seqA, seqB, compareN, displayLen, mergeVal, n, stepIndex, w, h])
+
+    for (const [seq] of paths) {
+      const at = Math.min(stepIndex, seq.length - 1)
+      drawHead(ctx, x(at), y(seq[at]))
+    }
+  }, [seqA, seqB, merge, stepIndex, last])
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={w}
-      height={h}
-      className="block"
-      style={{ width: w, height: h }}
-    />
+    <>
+      <CanvasView w={w} h={h} draw={draw} label={compareN ? `Paths of ${n} and ${compareN}` : `Path of ${n}`} />
+      <Caption
+        left={
+          <>
+            <Key swatch="bg-neon">n&#8321; = {n}</Key>
+            {compareN ? <Key swatch="bg-fg">n&#8322; = {compareN}</Key> : <span className="text-faint">add a second number under Compare</span>}
+          </>
+        }
+        right={
+          <>
+            {merge !== null && <span className="text-faint">merge {merge.toLocaleString()}</span>}
+            <span className="text-fg">{stepIndex === 0 ? 'press play' : `step ${stepIndex}/${last}`}</span>
+          </>
+        }
+      />
+    </>
   )
 }

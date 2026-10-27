@@ -2,39 +2,35 @@ import { Bookmark, X } from 'lucide-react'
 import useCollatzStore from '../../store/useCollatzStore.js'
 
 export default function RecordReplay() {
+  const n = useCollatzStore((s) => s.n)
   const savedNumbers = useCollatzStore((s) => s.savedNumbers)
   const saveCurrent = useCollatzStore((s) => s.saveCurrent)
   const removeSaved = useCollatzStore((s) => s.removeSaved)
-  const loadSaved = useCollatzStore((s) => s.loadSaved)
+  const setN = useCollatzStore((s) => s.setN)
 
   return (
     <div>
-      <div className="section-title">Saved</div>
-      <button onClick={saveCurrent} className="btn btn-primary w-full mb-2">
+      <h2 className="section-title">Saved</h2>
+      <button onClick={saveCurrent} className="btn btn-ghost mb-2 w-full border border-line">
         <Bookmark size={13} />
-        Save current
+        Save {n.toLocaleString()}
       </button>
-      {savedNumbers.length === 0 && (
-        <p className="text-xs text-gray-400">No saved sequences.</p>
+      {savedNumbers.length === 0 ? (
+        <p className="text-xs text-faint">Nothing saved yet. Saved numbers stay after a reload.</p>
+      ) : (
+        <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+          {savedNumbers.map((v) => (
+            <span key={v} className="chip flex items-center gap-1 pr-1">
+              <button onClick={() => setN(v)} className={v === n ? 'text-neon' : 'hover:text-fg'}>
+                {v.toLocaleString()}
+              </button>
+              <button onClick={() => removeSaved(v)} aria-label={`Remove ${v}`} className="text-faint hover:text-fg">
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
       )}
-      <div className="flex flex-col gap-0.5 max-h-28 overflow-y-auto">
-        {savedNumbers.map((v) => (
-          <div key={v} className="flex items-center gap-1 text-xs">
-            <button
-              onClick={() => loadSaved(v)}
-              className="flex-1 text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700 font-mono transition-colors"
-            >
-              {v}
-            </button>
-            <button
-              onClick={() => removeSaved(v)}
-              className="px-1 py-1 rounded text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <X size={12} />
-            </button>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

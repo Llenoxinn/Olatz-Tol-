@@ -1,0 +1,22 @@
+# dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# logs
+logs/
+*.log
+npm-debug.log*
+
+# editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# local AI-assistant folders (Claude Code worktrees and session notes)
+.claude/
+.remember/
+.playwright-cli/

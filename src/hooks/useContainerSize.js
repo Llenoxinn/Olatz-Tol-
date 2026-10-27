@@ -1,18 +1,17 @@
-import { useState, useRef, useEffect } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 
+// Content-box size of `ref`, measured before paint so canvases never draw at a guessed size.
 export default function useContainerSize() {
   const ref = useRef(null)
-  const [size, setSize] = useState({ w: 700, h: 450 })
+  const [size, setSize] = useState({ w: 0, h: 0 })
 
-  useEffect(() => {
-    if (!ref.current) return
+  useLayoutEffect(() => {
     const el = ref.current
-
     const update = () => {
-      const rect = el.getBoundingClientRect()
-      setSize({ w: Math.floor(rect.width), h: Math.floor(rect.height) })
+      const w = el.clientWidth
+      const h = el.clientHeight
+      setSize((s) => (s.w === w && s.h === h ? s : { w, h }))
     }
-
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)

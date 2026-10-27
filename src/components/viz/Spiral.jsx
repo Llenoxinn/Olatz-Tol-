@@ -1,94 +1,67 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
-import { stepsWithFlags } from '../../lib/collatz.js'
+import { sequence, stats } from '../../lib/collatz.js'
 import { computeSpiralPath } from '../../lib/layout.js'
-import useAnimation from '../../hooks/useAnimation.js'
-import useStepSound from '../../hooks/useStepSound.js'
+import { drawHead } from '../../lib/canvas.js'
+import { COLORS } from '../../lib/constants.js'
+import CanvasView, { Caption, Legend, CAPTION_H } from './CanvasView.jsx'
 
-export default function Spiral({ w = 700, h = 450 }) {
-  const canvasRef = useRef(null)
+export default function Spiral({ w, h }) {
   const n = useCollatzStore((s) => s.n)
   const stepIndex = useCollatzStore((s) => s.stepIndex)
 
-  useAnimation()
-  useStepSound()
+  const seq = useMemo(() => sequence(n), [n])
+  const { peak } = useMemo(() => stats(n), [n])
+  const last = seq.length - 1
+  const at = Math.min(stepIndex, last)
 
-  const steps = useMemo(() => stepsWithFlags(n), [n])
+  const draw = useCallback((ctx, w, h) => {
+    const ph = h - CAPTION_H
+    const pts = computeSpiralPath(seq, peak, w, ph)
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, w, h)
-
-    const maxV = Math.max(...steps.map((s) => s.value))
-    const points = computeSpiralPath(steps.slice(0, stepIndex + 1), maxV, w, h - 24)
-
-    if (points.length < 2) {
-      ctx.fillStyle = '#9ca3af'
-      ctx.font = '13px Inter, sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText('Press play to begin', w / 2, h / 2)
-      return
-    }
-
-    ctx.strokeStyle = '#f3f4f6'
-    ctx.lineWidth = 0.5
+    ctx.strokeStyle = COLORS.grid
+    ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(w / 2, 10)
-    ctx.lineTo(w / 2, h - 34)
-    ctx.moveTo(10, (h - 24) / 2)
-    ctx.lineTo(w - 10, (h - 24) / 2)
+    ctx.moveTo(w / 2, 12)
+    ctx.lineTo(w / 2, ph - 12)
+    ctx.moveTo(12, ph / 2)
+    ctx.lineTo(w - 12, ph / 2)
     ctx.stroke()
 
-    ctx.lineWidth = 1.5
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    for (let i = 0; i < points.length - 1; i++) {
-      const p = points[i]
-      const q = points[i + 1]
-      const alpha = 0.3 + (i / points.length) * 0.7
-      ctx.globalAlpha = alpha
+    ctx.lineWidth = 1.25
+    ctx.strokeStyle = COLORS.ghost
+    ctx.beginPath()
+    pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)))
+    ctx.stroke()
+
+    // Older segments fade so the direction of travel reads at a glance.
+    ctx.lineWidth = 1.75
+    for (let i = 0; i < at; i++) {
+      ctx.globalAlpha = 0.3 + (i / at) * 0.7
+      ctx.strokeStyle = seq[i] % 2 ? COLORS.up : COLORS.down
       ctx.beginPath()
-      ctx.moveTo(p.x, p.y)
-      ctx.lineTo(q.x, q.y)
-      ctx.strokeStyle = p.operation === 'up' ? '#dc2626' : '#2563eb'
+      ctx.moveTo(pts[i].x, pts[i].y)
+      ctx.lineTo(pts[i + 1].x, pts[i + 1].y)
       ctx.stroke()
     }
     ctx.globalAlpha = 1
 
-    ctx.fillStyle = '#e5e7eb'
+    ctx.fillStyle = COLORS.faint
     ctx.beginPath()
-    ctx.arc(points[0].x, points[0].y, 3, 0, Math.PI * 2)
+    ctx.arc(pts[0].x, pts[0].y, 3, 0, Math.PI * 2)
     ctx.fill()
-
-    const last = points[points.length - 1]
-    ctx.fillStyle = '#059669'
-    ctx.beginPath()
-    ctx.arc(last.x, last.y, 4, 0, Math.PI * 2)
-    ctx.fill()
-
-    ctx.fillStyle = '#f9fafb'
-    ctx.fillRect(0, h - 24, w, 24)
-    ctx.fillStyle = '#6b7280'
-    ctx.font = '11px Inter, monospace'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(`n = ${n}  \u00b7  ${stepIndex} steps  \u00b7  max ${maxV.toLocaleString()}`, w / 2, h - 12)
-  }, [steps, stepIndex, n, w, h])
+    drawHead(ctx, pts[at].x, pts[at].y)
+  }, [seq, peak, at])
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={w}
-      height={h}
-      className="block"
-      style={{ width: w, height: h }}
-    />
+    <>
+      <CanvasView w={w} h={h} draw={draw} label={`Spiral of ${n}'s path to 1`} />
+      <Caption
+        left={<>n = {n}<span className="text-faint">max {peak.toLocaleString()}</span></>}
+        right={<><Legend /><span className="text-fg">{at === 0 ? 'press play' : `step ${at}/${last}`}</span></>}
+      />
+    </>
   )
 }

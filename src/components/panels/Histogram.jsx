@@ -1,90 +1,61 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import useCollatzStore from '../../store/useCollatzStore.js'
-import { stoppingTimes } from '../../lib/collatz.js'
+import { stoppingTime, stoppingTimes } from '../../lib/collatz.js'
+import { COLORS, FONT } from '../../lib/constants.js'
+import useContainerSize from '../../hooks/useContainerSize.js'
+import CanvasView from '../viz/CanvasView.jsx'
 
-const PAD = { top: 10, right: 12, bottom: 30, left: 36 }
+const AXIS_H = 16
 
 export default function Histogram() {
-  const canvasRef = useRef(null)
+  const { ref, w, h } = useContainerSize()
   const maxN = useCollatzStore((s) => s.maxN)
+  const n = useCollatzStore((s) => s.n)
+  const mine = stoppingTime(n)
 
-  const { bins, maxCount, maxTime } = useMemo(() => {
+  const { bins, maxCount, maxT } = useMemo(() => {
     const times = stoppingTimes(maxN)
-    const maxT = Math.max(...times)
-    const numBins = Math.min(60, maxT)
-    const b = new Array(numBins).fill(0)
-    for (const t of times) {
-      const idx = Math.floor((t / maxT) * (numBins - 1))
-      b[idx]++
-    }
-    return { bins: b, maxCount: Math.max(...b), maxTime: maxT }
+    const maxT = times.reduce((m, t) => (t > m ? t : m), 1)
+    const bins = new Array(Math.min(60, maxT)).fill(0)
+    for (const t of times) bins[Math.floor((t / maxT) * (bins.length - 1))]++
+    return { bins, maxCount: Math.max(...bins), maxT }
   }, [maxN])
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const parent = canvas.parentElement
-    const W = parent ? parent.clientWidth : 320
-    const H = 150
-    canvas.width = W
-    canvas.height = H
-    const ctx = canvas.getContext('2d')
-    const plotW = W - PAD.left - PAD.right
-    const plotH = H - PAD.top - PAD.bottom
-
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, W, H)
-
-    ctx.strokeStyle = '#f3f4f6'
-    ctx.lineWidth = 1
-    ctx.fillStyle = '#9ca3af'
-    ctx.font = '9px Inter, monospace'
-    ctx.textAlign = 'right'
-    ctx.textBaseline = 'middle'
-    for (let i = 0; i <= 3; i++) {
-      const y = PAD.top + plotH - (i / 3) * plotH
-      ctx.beginPath()
-      ctx.moveTo(PAD.left, y)
-      ctx.lineTo(W - PAD.right, y)
-      ctx.stroke()
-      const val = Math.round((i / 3) * maxCount)
-      ctx.fillText(val, PAD.left - 4, y)
-    }
-
-    const barW = plotW / bins.length
+  // The bar holding the current number is drawn white.
+  const draw = useCallback((ctx, w, h) => {
+    const plotH = h - AXIS_H
+    const barW = w / bins.length
+    const own = mine <= maxT ? Math.floor((mine / maxT) * (bins.length - 1)) : -1
     for (let i = 0; i < bins.length; i++) {
-      const barH = (bins[i] / maxCount) * plotH
-      const x = PAD.left + i * barW
-      const y = PAD.top + plotH - barH
-      const t = i / bins.length
-      const g = Math.round(150 + t * 60)
-      ctx.fillStyle = `rgb(${g - 60},${g},${g})`
-      ctx.fillRect(x, y, Math.max(barW - 0.5, 0.5), barH)
+      const barH = Math.max((bins[i] / maxCount) * plotH, bins[i] ? 1 : 0)
+      ctx.fillStyle = i === own ? COLORS.fg : `rgba(${COLORS.neonRgb}, ${0.35 + (bins[i] / maxCount) * 0.65})`
+      ctx.fillRect(i * barW, plotH - barH, Math.max(barW - 1, 0.5), barH)
     }
-
-    ctx.fillStyle = '#9ca3af'
-    ctx.font = '9px Inter, monospace'
+    ctx.fillStyle = COLORS.faint
+    ctx.font = `11px ${FONT}`
+    ctx.textBaseline = 'bottom'
     ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.fillText('0', PAD.left, PAD.top + plotH + 6)
-    ctx.textAlign = 'right'
-    ctx.fillText(String(maxTime), W - PAD.right, PAD.top + plotH + 6)
-
-    ctx.fillStyle = '#6b7280'
-    ctx.font = '10px Inter, sans-serif'
+    ctx.fillText('0', 0, h)
     ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    ctx.fillText('Stopping time', PAD.left + plotW / 2, PAD.top + plotH + 18)
-  }, [bins, maxCount, maxTime])
+    ctx.fillText('stopping time', w / 2, h)
+    ctx.textAlign = 'right'
+    ctx.fillText(String(maxT), w, h)
+  }, [bins, maxCount, maxT, mine])
 
   return (
-    <div className="w-full">
-      <div className="section-title">Distribution</div>
-      <canvas
-        ref={canvasRef}
-        className="block w-full border border-gray-200 rounded"
-        style={{ height: 150 }}
-      />
+    <div className="flex h-full flex-col">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="section-title">Distribution</h2>
+        <span className="truncate text-xs text-dim tabular-nums">
+          <span className="mr-1 inline-block size-1.5 rounded-full bg-fg" />
+          {n.toLocaleString()} &rarr; {mine}
+        </span>
+      </div>
+      <div ref={ref} className="relative min-h-0 flex-1">
+        {w > 0 && h > 0 && (
+          <CanvasView w={w} h={h} draw={draw} label={`Stopping times from 1 to ${maxN}, up to ${maxT} steps`} />
+        )}
+      </div>
     </div>
   )
 }
