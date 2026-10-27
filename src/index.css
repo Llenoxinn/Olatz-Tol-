@@ -68,6 +68,89 @@
     @apply rounded-md border border-line px-2 py-0.5 text-xs text-dim tabular-nums transition-colors hover:border-neon/50 hover:text-fg;
   }
 
+  /* Mode tabs: a neon copy of the row is clipped to the active tab (see ModeTabs.jsx). */
+  .tab {
+    @apply flex items-center gap-2 rounded-t-[10px] px-4 py-2 text-sm font-medium whitespace-nowrap text-dim transition-colors duration-150 hover:text-fg;
+  }
+  .tab-glow {
+    @apply pointer-events-none absolute inset-0 flex bg-neon;
+  }
+  .tab-glow .tab {
+    @apply text-ink;
+  }
+  .tab-glow[data-ready] {
+    transition: clip-path 220ms var(--ease-in-out);
+  }
+
+  /* Vertical tabs in the About dialog. */
+  .vtab {
+    @apply flex w-full items-center justify-between gap-3 rounded-xl border border-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap text-dim transition-colors duration-150 hover:text-fg aria-selected:border-neon/20 aria-selected:bg-neon/10 aria-selected:text-neon;
+  }
+  .vtab-count {
+    @apply min-w-5 rounded-full bg-line px-1.5 text-center text-xs text-dim tabular-nums transition-colors duration-150 group-aria-selected:bg-neon group-aria-selected:text-ink;
+  }
+
+  .switch {
+    @apply relative h-5 w-9 shrink-0 cursor-pointer rounded-full bg-line transition-colors duration-150 ease-out aria-checked:bg-neon;
+  }
+  .switch::after {
+    @apply absolute top-0.5 left-0.5 size-4 rounded-full bg-fg transition-[translate,background-color] duration-150 ease-out content-[''];
+  }
+  .switch[aria-checked='true']::after {
+    @apply translate-x-4 bg-ink;
+  }
+
+  .radio {
+    @apply size-4 shrink-0 cursor-pointer appearance-none rounded-full border-[1.5px] border-dashed border-neon/50 transition-[border-color] duration-150 checked:border-solid checked:border-neon;
+  }
+  .radio:checked {
+    background: radial-gradient(circle, var(--color-neon) 0 38%, transparent 42%);
+  }
+
+  /* Native <dialog>: fades and scales in, closes the same way where supported.
+     Pinned near the top so switching tabs only moves the bottom edge. */
+  .about {
+    @apply mx-auto mt-[min(10dvh,5rem)] mb-auto max-h-[calc(100dvh-min(10dvh,5rem)-1rem)] w-[min(42rem,calc(100vw-2rem))] overflow-y-auto rounded-[20px] border border-line bg-panel text-fg;
+    opacity: 0;
+    scale: 0.96;
+    transition:
+      opacity 200ms var(--ease-out),
+      scale 200ms var(--ease-out),
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+  .about[open] {
+    opacity: 1;
+    scale: 1;
+    @starting-style {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  .about::backdrop {
+    background: rgb(0 0 0 / 0);
+    transition:
+      background-color 200ms var(--ease-out),
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+  .about[open]::backdrop {
+    background: rgb(0 0 0 / 0.65);
+    @starting-style {
+      background: rgb(0 0 0 / 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tab-glow[data-ready] {
+      transition: none;
+    }
+    .about,
+    .about[open] {
+      scale: 1;
+    }
+  }
+
   /* The header logo; the intro animates into this exact shape. */
   .wordmark {
     @apply inline-flex items-baseline font-display leading-none;

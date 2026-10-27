@@ -2,12 +2,12 @@ import { useState } from 'react'
 import Layout from './components/Layout.jsx'
 import Intro from './components/Intro.jsx'
 import MagicBento, { BentoCard } from './components/MagicBento.jsx'
-import ModeSelector from './components/controls/ModeSelector.jsx'
+import ModeTabs from './components/controls/ModeTabs.jsx'
 import NumberField from './components/controls/NumberField.jsx'
 import StepControls from './components/controls/StepControls.jsx'
 import CompareInput from './components/controls/CompareInput.jsx'
 import RecordReplay from './components/controls/RecordReplay.jsx'
-import ConjectureInfo from './components/panels/ConjectureInfo.jsx'
+import AboutDialog from './components/panels/AboutDialog.jsx'
 import StatsPanel from './components/panels/StatsPanel.jsx'
 import Histogram from './components/panels/Histogram.jsx'
 import DelayTracker from './components/panels/DelayTracker.jsx'
@@ -46,19 +46,21 @@ export default function App() {
         inert={intro}
         sidebar={
           <>
-            <ModeSelector />
             <NumberField label="Starting number" value={n} onChange={setN} min={1} max={100000} sliderMax={10000} />
             <NumberField label="Range" value={maxN} onChange={setMaxN} min={100} max={50000} step={100} />
             {mode !== 'heatmap' && mode !== 'tree' && <StepControls />}
             {mode === 'multi' && <CompareInput />}
             <RecordReplay />
-            <ConjectureInfo />
+            <AboutDialog />
           </>
         }
         main={
           <>
-            <div className="h-[62svh] min-h-80 shrink-0 md:h-auto md:min-h-[360px] md:flex-1 md:shrink">
-              <VizContainer>{(size) => <Viz w={size.w} h={size.h} />}</VizContainer>
+            <div className="flex h-[62svh] min-h-80 shrink-0 flex-col md:h-auto md:min-h-[360px] md:flex-1 md:shrink">
+              <ModeTabs />
+              <div id="viz-panel" role="tabpanel" aria-labelledby={`mode-tab-${mode}`} className="min-h-0 flex-1">
+                <VizContainer>{(size) => <Viz w={size.w} h={size.h} />}</VizContainer>
+              </div>
             </div>
             <div className="shrink-0">
               <MagicBento

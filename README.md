@@ -73,7 +73,9 @@ The grid is a dependency-free take on [React Bits' MagicBento](https://reactbits
 ### Other details
 
 - **Intro**: each letter of *olatz* rides its own hailstone sequence and lands when it reaches 1, then *tol* bounces in and its box draws itself. Press any key or tap to skip. It shows a static logo when the OS asks for reduced motion.
-- **Playback**: play, pause, and step through a sequence at an adjustable speed, with optional tones whose pitch follows the value.
+- **Mode tabs**: sit on top of the chart, and the highlight slides between them. Arrow keys, Home and End switch views.
+- **Playback**: play, pause, or step through a sequence at Slow, Normal or Fast speed. The Sound switch adds tones whose pitch follows the value.
+- **What is this?**: a dialog that covers the rule, a step-by-step example (27) and a short history of the problem.
 - **Saved numbers**: kept in `localStorage` and still there after a reload.
 - **PNG export**: any view can be saved as a transparent PNG.
 - **Responsive**: works from phone width up, and canvases render sharply on high-DPI screens.
